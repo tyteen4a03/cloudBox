@@ -1,14 +1,15 @@
 cloudBox World Format - by tyteen4a03 with input from fragmer
+Official documentation maintained here and on http://wiki.vg/ClassicWorld_file_format
 
 File Extension: .cw (Classic World. We are so creative!)
 File Format: gzip'd NBT:
 
-CLASSIC_WORLD: Compound[
-    LEVEL_VERSION: Byte() // Version of level file.
-    WorldName: String()
+ClassicWorld: Compound[
+    FormatVersion: Byte() // Version of level file.
+    Name: String()
     // Random bytes. This must stay intact in between loading/saving worlds.
     // In Python uuid.uuid4() can be used.
-    WorldGUID: ByteArray()
+    UUID: ByteArray()
     // Coordinates are all shorts, ranging from 0 to 2047. At runtime 1 is added to support maximum 2048^3 map size.
     X: Short() // Length of level.
     Y: Short() // Width of level.
@@ -17,13 +18,13 @@ CLASSIC_WORLD: Compound[
         Service: String() // Minecraft or ClassiCube.
         Username: String()
     ]
-    MapGeneratorUsed: Compound[ // How this map was created. Optional.
+    MapGenerator: Compound[ // How this map was created. Optional.
         Software: String() // cloudBox, obviously
         MapGeneratorName: String()
     ]
-    TimeCreated: Int() // Time of level creation. Unix timestamp. Optional.
-    LastAccessed: Int() // Last time it was accessed. Optional.
-    LastModified: Int() // Last time it was modified. Optional.
+    TimeCreated: Long() // Time of level creation. Unix timestamp. Optional.
+    LastAccessed: Long() // Last time it was accessed. Optional.
+    LastModified: Long() // Last time it was modified. Optional.
     Spawn: Compound[ // Spawn point.
         X: Short()
         Y: Short()
@@ -54,9 +55,8 @@ CLASSIC_WORLD: Compound[
 ]
 
 Notes:
-1. Reserved Metadata softwareNames are: CPE (For CPE-extension-related format, see worldFormat-CPE (to be written))
-2. Reserved Metadata pluginNames are: _system (Reserved for the server software itself)
-3. Optional fields are not required for normal operation, but implementation of these fields is highly recommended.
-4. Custom tags outside Metadata is allowed (for readability or flexibility), however please use non-standard-clashing
+1. Reserved Metadata softwareNames are: CPE (For CPE-extension-related format, see worldFormat-CPE)
+2. Optional fields are not required for normal operation, but implementation of these fields is highly recommended.
+3. Custom tags outside Metadata is allowed (for readability or flexibility), however please use non-standard-clashing
 prefixes (i.e cpe_myShinyTag would be a bad idea).
-5. If it is not clear to you (as you probably have Wikipedia'd the article), all Unix timestamps must be in UTC.
+4. If it is not clear to you (as you probably have Wikipedia'd the article), all Unix timestamps must be in UTC.
