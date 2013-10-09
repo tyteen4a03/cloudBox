@@ -3,6 +3,10 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+from cloudbox.common.exceptions import _errorCodeException
 
-def packString(string, length=64, packWith=" "):
-    return string + (packWith * (length - len(string)))
+
+class WorldLoadErrorException(_errorCodeException):
+    pass
+
+

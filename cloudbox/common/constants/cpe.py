@@ -12,3 +12,34 @@ TYPE_FORMATS = {
     TYPE_EXTINFO: Format("sh"),
     TYPE_EXTENTRY: Format("si"),
 }
+
+CPE_EXTENSIONS = {
+    "ClickDistance": {
+        "ExtensionVersion": 1,
+        "DefaultDistance": 160,
+    },
+    "CustomBlocks": {
+        "ExtensionVersion": 1,
+        "SupportLevel": 1,
+        "Fallback": {
+            1: {
+                50: 44,
+                51: 39,
+                52: 12,
+                53: 0,
+                54: 10,
+                55: 33,
+                56: 25,
+                57: 3,
+                58: 29,
+                59: 28,
+                60: 20,
+                61: 42,
+                62: 49,
+                63: 36,
+                64: 5,
+                65: 1,
+            }
+        }
+    }
+}

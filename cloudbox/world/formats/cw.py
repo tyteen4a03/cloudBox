@@ -25,7 +25,7 @@ class ClassicWorldWorldFormat(object):
     CURRENT_LEVEL_VERSION = 0
     ACCEPTABLE_LEVEL_VERSIONS = [0]
 
-    requiredFields = ["WorldName", "WorldGUID", "X", "Y", "Z", "Spawn", "BlockArray" "Metadata"]
+    requiredFields = ["Name", "UUID", "X", "Y", "Z", "Spawn", "BlockArray" "Metadata"]
     optionalFields = ["CreatedBy", "MapGeneratorUsed", "TimeCreated", "LastAccessed", "LastModified"]
 
     @staticmethod
@@ -34,9 +34,9 @@ class ClassicWorldWorldFormat(object):
         with open(filepath, "r") as fo:
             _nbtFile = fo.read()
         nbtObject = nbt.NBTFile(cStringIO.StringIO(_nbtFile))
-        if nbtObject.name != "CLASSIC_WORLD":
-            return {"error": ERROR_HEADER_MISMATCH}  # Not using exceptions due to performance
-        if nbtObject["WORLD_VERSION"] not in ClassicWorldWorldFormat.ACCEPTABLE_LEVEL_VERSIONS:
+        if nbtObject.name != "ClassicWorld":
+            raise ERROR_HEADER_MISMATCH
+        if nbtObject["FormatVersion"] not in ClassicWorldWorldFormat.ACCEPTABLE_LEVEL_VERSIONS:
             return {"error": ERROR_UNSUPPORTED_LEVEL_VERSION}
         for r in ClassicWorldWorldFormat.requiredFields:
             if not nbtObject[r]:
