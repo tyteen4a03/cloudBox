@@ -42,9 +42,9 @@ class _Singleton(type):
 class Logger(object):
     """
     This class is used to colour and log output.
-    It handles colours, printing, and logging to console.log and
-        the individual level log files.
+    It handles colours, printing, and logging to console.log and the individual level log files.
     """
+    # TODO Async all methods
     __metaclass__ = _Singleton
 
     cols = {

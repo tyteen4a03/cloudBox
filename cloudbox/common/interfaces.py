@@ -13,20 +13,16 @@ class IPacketHandler(Interface):
 
     parent = Attribute("The parent the DataHandler belongs to.")
 
-    def handleData(data):
+    def handleData(baseVars, data):
         """
         Acts upon data.
         """
 
-    def packData(data):
+    def packData(baseVars, data):
         """
         Packs the data to the desired wire-transfer format.
         """
 
-    def feed(data):
-        """
-        Feeds data to the internal buffer.
-        """
 
 class IGeneralPacketProcessor(Interface):
     """

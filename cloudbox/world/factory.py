@@ -5,10 +5,9 @@
 
 from twisted.internet.protocol import ReconnectingClientFactory
 
-from cloudbox.common.handlers import *
-from cloudbox.common.logger import Logger
+from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
-from cloudbox.world.handlers import *
+from cloudbox.common.logger import Logger
 from cloudbox.world.protocol import WorldServerProtocol
 
 
@@ -18,27 +17,30 @@ class WorldServerFactory(ReconnectingClientFactory):
     """
     protocol = WorldServerProtocol
     retryConnection = False
+    remoteServerType = SERVER_TYPES["HubServer"]
 
     def __init__(self, parentService):
         self.parentService = parentService
         self.logger = Logger()
         self.worlds = []
         self.clients = {}  # {clientID: client ID (assigned by HubServer), clientStates: dict of states}
+        self.instance = None
         self.retryConnection = True
-        self.handlers = self.getHandlers()
 
-    def getHandlers(self):
-        handlers = {
-            TYPE_HANDSHAKE: HandshakePacketHandler,
-            TYPE_STATEUPDATE: StateUpdatePacketHandler,
-            TYPE_SERVERDISCONNECT: ServerShutdownPacketHandler
-        }
-        return handlers
+    def startFactory(self):
+        self.handlers = self.buildHandlers()
+
+    def buildHandlers(self):
+        h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())
+        return h
+
+    def getServerName(self):
+        return self.settings["main"]["server-name"]
+
+    def getServerType(self):
+        return self.parentService.getServerType()
 
     ### Twisted functions
-
-    def startedConnecting(self, connector):
-        self.logger.info("Connecting to %s:%s...")
 
     def buildProtocol(self, addr):
         self.resetDelay()
@@ -49,7 +51,7 @@ class WorldServerFactory(ReconnectingClientFactory):
     def quit(self, msg):
         self.retryConnection = False
         # Tell the HubServer we are breaking up
-        self.instance.sendServerShutdown()
+        self.instance.sendDisconnect()
 
     def clientConnectionLost(self, connector, reason):
         """
@@ -79,4 +81,16 @@ class WorldServerFactory(ReconnectingClientFactory):
         """
         Unpacks the world stream sent from the Hub server.
         """
+        pass
+
+    def saveWorld(self, worldID):
+        pass
+
+    def saveAllWorlds(self):
+        pass
+
+    def closeWorld(self, worldID):
+        pass
+
+    def closeAllWorlds(self):
         pass

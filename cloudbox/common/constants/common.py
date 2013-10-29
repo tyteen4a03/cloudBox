@@ -8,7 +8,6 @@ VERSION = "1.0.0 Alpha 1"
 # 0 = Alpha, 1 = Beta, 2 = RC, 3 = Release, 4 = Post-release hotfixes
 VERSION_NUMBER = 01000001
 
-
 # Server types
 
 SERVER_TYPES = {
@@ -24,29 +23,16 @@ DEFAULT_PERMISSIONS = {
 
 }
 
-# Handlers - the basics
-
-# Packets sent from clients
-HANDLERS_CLIENT_BASIC = {
-    0x00: ["keepAlive", "cloudbox.common.handlers"],
-    0x01: ["initHandshake", "cloudbox.common.handlers"],
-    0x02: ["handshakeEncryptResponse", "cloudbox.common.handlers"], # Placeholder for encryption, unused for now
-    0xFF: ["disconnect", "cloudbox.common.handlers"],
-}
-
-# Packets sent from servers
-HANDLERS_SERVER_BASIC = {
-    0x00: ["keepAlive", "cloudbox.common.handlers"],
-    0x01: ["handshakeEncrypt", "cloudbox.common.handlers"], # Placeholder for encryption, unused for now
-    0x02: ["establishConnection", "cloudbox.common.handlers"],
-    0xFF: ["disconnect", "cloudbox.common.handlers"],
-}
-
 # Errors
 
 ERR_NOT_ENOUGH_DATA = 100
 ERR_METHOD_NOT_FOUND = 101
 ERR_UNABLE_TO_PARSE_DATA = 102
+
+# Disconnect types
+DISCONNECT_GENERIC = 0
+DISCONNECT_SHUTDOWN = 1
+DISCONNECT_ERROR = 2
 
 # Format Lengths - used in Format
 

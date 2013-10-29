@@ -1,0 +1,89 @@
+cloudBox Protocol
+Version 1
+
+Copyright 2012 - 2013 the cloudBox team, under BSD-2 Clause Modified License.
+
+Terminologies:
+Disconnect the server/client - Send a Disconnect packet with the appropriate DisconnectType, then close the connection.
+StateRepository - A dictionary holding a player's state (information).
+
+
+0x00 - Keep Alive
+Two-way
+Used by: HubServer, WorldServer, DatabaseServer, WebServer
+Direction: * <-> *
+
+Both ways
+Packet Data:
+None
+
+Handling of packet (both ways):
+Indicates the opposite side is still "alive". If opposite side do not send a keep-alive after the timeout period
+(? seconds is recommended), the server assumes that the opposite side has unexpectedly disconnected, and performs
+relevant cleanups.
+
+
+
+0x01 - Handshake
+Two-way
+Used by: HubServer, WorldServer, DatabaseServer, WebServer
+Direction: Client -> Server, Server -> Client
+
+Client to Server
+Packet Data:
+ClientName: String - The client's name
+ClientType: Int - The client's type. Must be an integer defined in cloudbox.common.constants.common.SERVER_TYPES
+
+Server to Client
+Packet Data:
+ServerName: String - The server's name
+ServerType: Int - The server's type. Must be an integer defined in cloudbox.common.constants.common.SERVER_TYPES
+
+Handling of packet (Server to Client):
+When a client connects, server must immediately check if the client is within its accepted client range. If the client
+is not in the whitelist, disconnect with a Disconnect packet. Server should then expect a Handshake packet. If the
+client sends anything other than the Handshake packet, disconnect the client.
+Upon receiving the packet, perform other necessary checks, If conditions are not met, disconnect the client.
+If there are no problems, register the client and send a Handshake packet indicating an establishment of the
+connection. Server can then starting data to the client.
+
+Handling of packet (Client to Server):
+When connection is made, client must send a Handshake packet, and wait for either a Disconnect packet, or a Handshake
+packet indicating successful handshaking.
+
+
+
+0x04 - State ID Allocation
+Two-way
+Used by: HubServer, WorldServer
+Direction: * <-> *
+
+Both ways
+Packet Data:
+RequestID: A random integer.
+ClientID: A State ID. Integer.
+
+Handling of packet (Server to Client):
+StateRepository ID Control resides at the Server. If the Server wishes to add a new entry, it must generate a random
+integer as the RequestID, and send it to the Client. The Client must respond with the same packet, indicating the
+entry has been successfully added.
+
+If the Client wishes to add a new entry, it must generate a random integer as the Request ID, and set the ClientID
+to 0. The server then must respond with the same RequestID and the newly allocated ClientID.
+
+
+0x05 - State Update
+Two-way
+Used by: HubServer, WorldServer
+Direction: * <-> *
+
+Both ways
+Packet Data:
+ClientID: The client's ID the sender wishes to update. Must be an integer.
+ClientState: A dictionary of any state the sender wishes to update.
+
+Handling of packet (Both Ways):
+Both sides are expected to overwrite values according to the client.
+
+
+0x06 -

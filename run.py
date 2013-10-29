@@ -6,10 +6,10 @@
 import sys
 
 from cloudbox.common.logger import Logger
-from cloudbox.common.service import cloudBoxService
+from cloudbox.common.service import CloudBoxService
 from cloudbox.common.constants.common import *
 
-if sys.argv[1] not in SERVER_TYPES:
+if sys.argv[1] not in SERVER_TYPES.keys():
     raise Exception("ServerType not recognized")
 
 logger = Logger(True)
@@ -25,11 +25,11 @@ else:
     logger.stdout("&f")
     logger.debug("&fIf you see this, debug mode is &eon&f!")
     logger.info("&fColorama &ainstalled&f - Console colours &cENABLED&f.")
-logger.info("Starting cloudBox Version %s - This is the %s" % (VERSION, sys.argv[1]))
+logger.info("Starting cloudBox %s Version %s" % (sys.argv[1], VERSION))
 
 # TODO - Less hack required
 try:
-    service = cloudBoxService(sys.argv[1])
+    service = CloudBoxService(sys.argv[1])
     service.start()
 except (KeyboardInterrupt, SystemExit):
     service.stop()

@@ -32,7 +32,7 @@ class KeepAlivePacketHandler(BasePacketHandler):
 
     @staticmethod
     def packData(data):
-        return data["_packer"].pack([])
+        return "\x91\x00"  # This is static so might as well pre-pack it :D
 
 
 class HandshakePacketHandler(BasePacketHandler):
@@ -42,55 +42,53 @@ class HandshakePacketHandler(BasePacketHandler):
 
     @staticmethod
     def handleData(data):
-        if data["remoteServerType"] == common.SERVER_TYPES["WorldServer"]:
-            if data["_serverType"] == common.SERVER_TYPES["HubServer"]:
+        if data["packetData"][1] == common.SERVER_TYPES["WorldServer"]:
+            if data["serverType"] == common.SERVER_TYPES["HubServer"]:
                 # See if they are in our allowed list
-                if not data["parent"].transport.getPeer().host in data["parent"].settings["main"]["allowed-ips"]:
+                if not data["parent"].transport.getPeer().host in \
+                        data["parent"].factory.settings["main"]["allowed-ips"]:
                     # Refuse connection
                     data["parent"].sendError("You are not connecting from an authorized IP.")
-                    data["parent"].loseConnection()
+                    data["parent"].transport.loseConnection()
+        data["parent"].sendError("Die potato")
+        data["parent"].transport.loseConnection()
 
-    # TODO: What the hell is this?
+
     @staticmethod
     def packData(data):
-        return data["_packer"].pack({
-            "clientName": data["parent"].NAME,
-            "clientType": data["parent"].TYPE
-        })
+        return data["packer"].pack([
+            handlers.TYPE_HANDSHAKE,
+            data["parent"].getServerName(),
+            data["parent"].getServerType()
+        ])
+
 
 class DisconnectPacketHandler(BasePacketHandler):
-    """
-    A Handler class for disconnection.
-    """
-
-    @staticmethod
-    def packData(data):
-        return self.data["_packer"].pack({
-            "disconnectReason": data["reason"]
-        })
-
-class ServerShutdownPacketHandler(BasePacketHandler):
     """
     A Handler class for Server Shutdown.
     """
 
     @staticmethod
-    def parseData(data):
-        if data["remoteServerType"] == common.SERVER_TYPES["HubServer"]:
+    def handleData(data):
+        data["logger"].info("{} closed connection, reason: {}".format(
+            common.SERVER_TYPES_INV[data["packetData"][0]], data["packetData"][2]))
+        if data["parent"].remoteServerType == common.SERVER_TYPES["HubServer"]:
             # Hub Server is closing our connection, why oh why
-            if data["_serverType"] == common.SERVER_TYPES["WorldServer"]:
-                data["parent"].saveAllWorlds()
-                data["parent"].closeAllWorlds()
-            elif data["_serverType"] == common.SERVER_TYPES["DatabaseServer"]:
+            if data["serverType"] == common.SERVER_TYPES["WorldServer"]:
+                data["parent"].factory.saveAllWorlds()
+                data["parent"].factory.closeAllWorlds()
+            elif data["serverType"] == common.SERVER_TYPES["DatabaseServer"]:
                 return
-        elif data["remoteServerType"] == common.SERVER_TYPES["WorldServer"]:
+        elif data["parent"].remoteServerType == common.SERVER_TYPES["WorldServer"]:
             # World Server is closing our connection, probably shutting down
             data["parent"].available = False
+        data["parent"].transport.loseConnection()
 
     @staticmethod
     def packData(data):
         return data["packer"].pack([
-            handlers.TYPE_SERVERSHUTDOWN,
-            data["_serverType"]
-        ]
-    )
+            handlers.TYPE_DISCONNECT,
+            data["serverType"],
+            data["disconnectType"],
+            data["message"]
+        ])

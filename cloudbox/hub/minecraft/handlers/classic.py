@@ -163,7 +163,7 @@ class BlockChangePacketHandler(BasePacketHandler):
 
     @staticmethod
     def handleData(data):
-        if data["_serverType"] == SERVER_TYPES["WorldServer"]:
+        if data["serverType"] == SERVER_TYPES["WorldServer"]:
             x, y, z, created, block = data["packetData"]
             if not data["parent"].identified:
                 data["parent"].factory.logger.info(

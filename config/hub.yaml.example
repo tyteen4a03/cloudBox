@@ -12,6 +12,8 @@ main:
     enable-cpe: true
     entry-mode: solo # Or "distributed"
     entry-world: default
+    allowed-ips:
+      - 127.0.0.1
 heartbeat:
     send-heartbeat: true
     minecraft-heartbeat: true

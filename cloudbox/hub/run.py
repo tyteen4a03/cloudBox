@@ -19,7 +19,6 @@ def init(serv):
 
     # Populate configuration.
     serv.loadConfig()
-    serv.populateConfig()
 
     # Start up everything.
     TCP4ServerEndpoint(reactor, serv.settings["hub"]["main"]["ports"]["clients"])\
@@ -37,6 +36,7 @@ def init(serv):
                 "http://www.classicube.net/server/heartbeat").start()
 
     reactor.run()
+
 
 def stop(serv):
     reactor.stop()

@@ -10,13 +10,11 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
-from twisted.application.internet import TCPClient, TCPServer
-
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.constants.common import *
 
 
-class cloudBoxService(object):
+class CloudBoxService(object):
     """
     The central hub of all services.
     """
@@ -26,8 +24,6 @@ class cloudBoxService(object):
         Initializes the service.
         Whoami contains the server identifier.
         """
-        if whoami not in SERVER_TYPES:
-            raise ValueError("Server not in valid SERVER_TYPE")
         self.serverType = SERVER_TYPES[whoami]
         # Make our loop registry
         self.loops = LoopRegistry()
@@ -50,11 +46,11 @@ class cloudBoxService(object):
         elif self.serverType == SERVER_TYPES["DatabaseServer"]:
             with open("config/database.yaml", "r") as f:
                 s = f.read()
-            self.settings["db"] = yaml.dump(yaml.load(s, Loader))
-        elif self.serverType == SERVER_TYPES["DatabaseServer"]:
+            self.settings["db"] = yaml.load(s, Loader)
+        elif self.serverType == SERVER_TYPES["WorldServer"]:
             with open("config/world.yaml", "r") as f:
                 s = f.read()
-            self.settings["world"] = yaml.dump(yaml.load(s, Loader))
+            self.settings["world"] = yaml.load(s, Loader)
         self.populateConfig(reload)
 
     def populateConfig(self, reload=False):
@@ -62,6 +58,8 @@ class cloudBoxService(object):
         if self.serverType == SERVER_TYPES["HubServer"]:
             self.factories["MinecraftHubServerFactory"].settings = self.settings["hub"]
             self.factories["WorldServerCommServerFactory"].settings = self.settings["hub"]
+        if self.serverType == SERVER_TYPES["WorldServer"]:
+            self.factories["WorldServerFactory"].settings = self.settings["world"]
 
     def start(self):
         """

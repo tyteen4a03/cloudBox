@@ -3,6 +3,8 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import importlib
+
 import msgpack
 from zope.interface import implements
 
@@ -19,11 +21,18 @@ class BaseGeneralPacketProcessor(object):
     def __init__(self, parent, handlers, serverType=None):
         self.parent = parent
         self.handlers = handlers
+        self.handlersClassRefs = {}
         self.logger = Logger()
+        self.baseVariables = {}
         if serverType:
             self.serverType = serverType
         else:
             self.serverType = self.parent.getServerType()
+        self.baseVariables = {
+            "serverType": self.serverType,
+            "parent": self.parent,
+            "logger": self.logger
+        }
 
     def feed(self, data):
         pass
@@ -33,12 +42,6 @@ class BaseGeneralPacketProcessor(object):
 
     def packPacket(self, packetID, packetData):
         pass
-
-    def _populateBaseVariables(self):
-        varDict = {
-            "_serverType": self.serverType
-        }
-        return varDict
 
 
 class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
@@ -50,9 +53,11 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         """
         Initialization.
         """
-        super(MSGPackPacketProcessor, self).__init__(parent, handlers)
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
+        super(MSGPackPacketProcessor, self).__init__(parent, handlers)
+        self.baseVariables["packer"] = self.packer
+        self.baseVariables["unpacker"] = self.unpacker
 
     def feed(self, data):
         self.unpacker.feed(data)
@@ -64,23 +69,32 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         # Try to decode the data
         data = self.unpacker.unpack()
         if not data:
-            return # Try again later
+            return  # Try again later
+        self.logger.info(str(data))
         # Read the handler
         handler = data[0]
         if handler not in self.handlers.keys():
             # TODO Client identifier
-            self.parent.logger.error("Client sent unparsable data (%s, %s)", (handler, data[1:].join(" ")))
+            self.logger.error("Client sent unparsable data (%s, %s)", (handler, data[1:].join(" ")))
+        # TODO Factorize?
+        if handler not in self.handlersClassRefs.keys():
+            self.initHandlerClass(handler)
         # Pass it on to the handler to handle this request
-        self.handlers[handler].handleData(data[1].append())
+        # TODO Unify this
+        dataDict = self.baseVariables
+        dataDict["packetData"] = data[1:]  # Don't pass the packet ID
+        self.handlersClassRefs[handler].handleData(dataDict)
 
     def packPacket(self, packetID, packetData):
-        return
+        if packetID not in self.handlersClassRefs.keys():
+            self.initHandlerClass(packetID)
+        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables))
 
-    def _populateBaseVariables(self):
-        varDict = dict(super(MSGPackPacketProcessor, self)._populateBaseVariables().items() + {
-            "_packer": self.packer,
-            "_unpacker": self.unpacker
-        }.items())
+    def initHandlerClass(self, handlerID):
+        # Grab the class
+        handlerEntry = self.handlers[handlerID]
+        cls = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])
+        self.handlersClassRefs[handlerID] = cls
 
 
 class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
@@ -115,8 +129,8 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
         packetData = list(packetFormat.unpackData(self.buffer[1:]))
         self.buffer = self.buffer[expectedLength + 1:]
         # Pass it on to the handler to handle this request
-        data = {
+        # TODO Unify that
+        self.handlers[packetType].handleData(dict({
             "parent": self.parent,
             "packetData": packetData
-        }
-        self.handlers[packetType].handleData(data)
+        }, **self.baseVariables))
