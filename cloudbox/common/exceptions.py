@@ -3,6 +3,8 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+from twisted.python.failure import Failure
+
 
 class _errorCodeException(Exception):
     """
@@ -11,7 +13,7 @@ class _errorCodeException(Exception):
     errorCode = None
     errorMessage = None
 
-    def __init__(self, errorCode, errorMessage):
+    def __init__(self, errorCode, errorMessage=""):
         self.errorCode = errorCode
         self.errorMessage = errorMessage
 
@@ -19,3 +21,7 @@ class _errorCodeException(Exception):
         return "Error {1}: {2}".format(self.errorCode, self.errorMessage)
 
     __str__ = __repr__
+
+
+def makeFailure(cls, errorCode, errorMessage=""):
+    return cls(errorCode, errorMessage)

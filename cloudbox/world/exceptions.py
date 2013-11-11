@@ -8,5 +8,3 @@ from cloudbox.common.exceptions import _errorCodeException
 
 class WorldLoadErrorException(_errorCodeException):
     pass
-
-
