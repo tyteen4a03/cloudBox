@@ -3,15 +3,10 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
 from twisted.internet.protocol import Factory
 
 from cloudbox.database.server.protocol import DatabaseServerProtocol
+
 
 class DatabaseServerFactory(Factory):
     """I am a database server that takes requests from nodes."""
