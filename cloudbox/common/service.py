@@ -3,7 +3,7 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-# YAMl
+# YAML
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -33,6 +33,8 @@ class CloudBoxService(object):
     def getServerType(self):
         return self.serverType
 
+    # TODO Factorize below methods
+
     def loadConfig(self, reload=False):
         """
         Loads the configuration file, depending on the SERVER_TYPE of the server.
@@ -46,7 +48,7 @@ class CloudBoxService(object):
         elif self.serverType == SERVER_TYPES["DatabaseServer"]:
             with open("config/database.yaml", "r") as f:
                 s = f.read()
-            self.settings["db"] = yaml.load(s, Loader)
+            self.settings["database"] = yaml.load(s, Loader)
         elif self.serverType == SERVER_TYPES["WorldServer"]:
             with open("config/world.yaml", "r") as f:
                 s = f.read()
@@ -60,6 +62,8 @@ class CloudBoxService(object):
             self.factories["WorldServerCommServerFactory"].settings = self.settings["hub"]
         if self.serverType == SERVER_TYPES["WorldServer"]:
             self.factories["WorldServerFactory"].settings = self.settings["world"]
+        if self.serverType == SERVER_TYPES["DatabaseServer"]:
+            self.factories["DatabaseServerFactory"].settings = self.settings["database"]
 
     def start(self):
         """

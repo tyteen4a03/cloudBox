@@ -7,9 +7,10 @@ from jinja2 import Environment, FileSystemLoader
 from tornado import web
 
 from cloudbox.common.logger import Logger
+from cloudbox.common.mixins import CloudBoxFactoryMixin
 
 
-class WebServerApplication(web.Application):
+class WebServerApplication(web.Application, CloudBoxFactoryMixin):
     """
     I am the WebServer application.
     """

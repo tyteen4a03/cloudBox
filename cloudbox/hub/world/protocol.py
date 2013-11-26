@@ -6,11 +6,11 @@
 from twisted.internet.protocol import Protocol
 
 from cloudbox.common.constants.common import *
-from cloudbox.common.constants.handlers import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
+from cloudbox.common.mixins import CloudBoxProtocolMixin
 
 
-class WorldServerCommServerProtocol(Protocol):
+class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
     """
     The protocol class for the WorldServer communicator factory.
     """
@@ -60,20 +60,3 @@ class WorldServerCommServerProtocol(Protocol):
         Makes the protocol leave the server.
         """
         pass
-
-    ### Base message-sending stuff ###
-
-    def sendPacket(self, packetID, packetData={}):
-        self.transport.write(self.gpp.packPacket(packetID, packetData))
-
-    def sendHandshake(self):
-        self.sendPacket(TYPE_HANDSHAKE)
-
-    def sendError(self, error):
-        self.sendDisconnect(DISCONNECT_ERROR, error)
-
-    def sendServerShutdown(self, reason=""):
-        self.sendDisconnect(DISCONNECT_SHUTDOWN, reason)
-
-    def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, message=""):
-        self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "message": message})

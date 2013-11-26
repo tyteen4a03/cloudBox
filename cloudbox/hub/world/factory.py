@@ -8,10 +8,11 @@ from twisted.internet.protocol import ServerFactory
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.logger import Logger
+from cloudbox.common.mixins import CloudBoxFactoryMixin
 from cloudbox.hub.world.protocol import WorldServerCommServerProtocol
 
 
-class WorldServerCommServerFactory(ServerFactory):
+class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin):
     """
     I listen to World Servers and interact with them, acting as a proxy.
     """
@@ -26,9 +27,6 @@ class WorldServerCommServerFactory(ServerFactory):
 
     def startFactory(self):
         self.handlers = self.buildHandlers()
-
-    def getServerType(self):
-        return self.parentService.getServerType()
 
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())

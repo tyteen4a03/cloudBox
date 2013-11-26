@@ -5,14 +5,16 @@
 
 from twisted.internet.protocol import ServerFactory
 
-from cloudbox.common.logger import Logger
-from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.cpe import *
+from cloudbox.common.logger import Logger
+from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.mixins import CloudBoxFactoryMixin
 from cloudbox.hub.minecraft.handlers import classic, cpe
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
-class MinecraftHubServerFactory(ServerFactory):
+
+class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
     """
     I am the Minecraft side of the hub. I handle Minecraft client requests and pass them on to World Servers.
     """
@@ -29,9 +31,6 @@ class MinecraftHubServerFactory(ServerFactory):
 
     def getWSFactoryInstance(self):
         return self.parentService.factories["WorldServerCommServerFactory"]
-
-    def getServerType(self):
-        return self.parentService.getServerType()
 
     def buildHandlers(self):
         handlers = {

@@ -8,10 +8,11 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.logger import Logger
+from cloudbox.common.mixins import CloudBoxFactoryMixin
 from cloudbox.world.protocol import WorldServerProtocol
 
 
-class WorldServerFactory(ReconnectingClientFactory):
+class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
     """
     I am the world server. I host some worlds, and do calculations about them.
     """
@@ -33,12 +34,6 @@ class WorldServerFactory(ReconnectingClientFactory):
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())
         return h
-
-    def getServerName(self):
-        return self.settings["main"]["server-name"]
-
-    def getServerType(self):
-        return self.parentService.getServerType()
 
     ### Twisted functions
 
@@ -65,8 +60,15 @@ class WorldServerFactory(ReconnectingClientFactory):
         self.logger.critical("Connection to HubServer failed: %s" % reason)
         connector.connect()
 
-    def loadWorld(self, worldId):
-        pass
+    def loadWorld(self, worldId=None):
+        """
+        Load the world given the ID.
+        If no ID is given, automatically generate one.
+        """
+
+
+    def _loadWorld(self, filepath):
+
 
     def unloadWorld(self, worldId):
         pass
@@ -94,3 +96,9 @@ class WorldServerFactory(ReconnectingClientFactory):
 
     def closeAllWorlds(self):
         pass
+
+    def addWorld(self, worldName, filepath):
+        """Adds the world to the database."""
+        self.dbConnector.
+
+    def deleteWorld(self, worldID):

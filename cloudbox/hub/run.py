@@ -7,8 +7,8 @@ from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ServerEndpoint
 
 from cloudbox.hub.heartbeat import HeartbeatService
-from cloudbox.hub.minecraft.server import MinecraftHubServerFactory
-from cloudbox.hub.world.server import WorldServerCommServerFactory
+from cloudbox.hub.minecraft.factory import MinecraftHubServerFactory
+from cloudbox.hub.world.factory import WorldServerCommServerFactory
 
 
 def init(serv):

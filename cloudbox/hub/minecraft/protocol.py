@@ -11,10 +11,21 @@ from cloudbox.common.gpp import MinecraftClassicPacketProcessor
 from cloudbox.common.logger import Logger
 from cloudbox.common.loops import LoopRegistry
 
+
 class MinecraftHubServerProtocol(Protocol):
     """
     Main protocol class for communicating with clients.
     """
+
+    def __init__(self):
+        self.id = None
+        self.ip = None
+        self.gpp = None
+        self.username = None
+        self.wsID = None  # World Server this user belongs to
+        self.identified = False
+        self.state = {}  # A special dict used to hold temporary "signals"
+        self.logger = Logger()
 
     ### Twisted Methods ###
 
@@ -22,13 +33,6 @@ class MinecraftHubServerProtocol(Protocol):
         """
         Called when a connection is made.
         """
-        self.id = None
-        self.username = None
-        self.wsID = None  # World Server this user belongs to
-        self.identified = False
-        self.state = {}  # A special dict used to hold temporary "signals"
-        self.logger = Logger()
-        self.loops = LoopRegistry()
         # Get an ID for ourselves
         self.id = self.factory.claimID(self)
         if self.id is None:
@@ -52,9 +56,6 @@ class MinecraftHubServerProtocol(Protocol):
         self.logger.debug(data)
         self.gpp.parseFirstPacket()
 
-    def getServerType(self):
-        return self.factory.getServerType()
-
     ### Message Handling ###
 
     def send(self, msg):
@@ -64,6 +65,7 @@ class MinecraftHubServerProtocol(Protocol):
         self.transport.write(msg)
 
     def sendPacket(self, packetId, packetData):
+        # TODO Rewrite to use GPP
         finalPacket = self.factory.handlers[packetId].packData(packetData)
         self.transport.write(chr(packetId) + finalPacket)
         self.logger.debug(finalPacket)

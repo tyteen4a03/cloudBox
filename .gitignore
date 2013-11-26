@@ -6,3 +6,4 @@ twistd.py
 .idea/*
 /config/*.yaml
 *.log
+/data/db/cloudbox.db
