@@ -45,6 +45,6 @@ HANDLERS_WORLD_SERVER = {
 
 HANDLERS_DATABASE_SERVER = {
     #TYPE_FETCH_DATA: ("cloudbox.database.handlers", "FetchDataPacketHandler"), # Not until peewee-twisted is ready
-    TYPE_DIRECT_QUERY: ("cloudbox.database.handlers", "DirectQueryPacketHandler")
+    TYPE_DIRECT_QUERY: ("cloudbox.database.handlers", "DirectQueryPacketHandler"),
     TYPE_QUERY_RESULT: ("cloudbox.database.handlers", "QueryResultPacketHandler"),
 }
