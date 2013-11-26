@@ -4,9 +4,9 @@
 # cloudBox Package.
 
 VERSION = "1.0.0 Alpha 1"
-# 2 Major, 2 Minor, 2 Minor, 1 ReleaseType, 1 ReleaseVersion
-# 0 = Alpha, 1 = Beta, 2 = RC, 3 = Release, 4 = Post-release hotfixes
-VERSION_NUMBER = 01000001
+# 1 Major, 2 Minor, 2 Minor, 1 ReleaseType, 1 ReleaseVersion
+# 1 = Alpha, 2 = Beta, 3 = RC, 4 = Release, 5 = Post-release hotfixes
+VERSION_NUMBER = 1000011
 
 # Server types
 

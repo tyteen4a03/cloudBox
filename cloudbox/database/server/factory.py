@@ -9,6 +9,7 @@ from twisted.enterprise.adbapi import ConnectionPool
 from twisted.internet.protocol import ServerFactory
 from twisted.python.failure import Failure
 
+from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxFactoryMixin
@@ -36,15 +37,18 @@ class DatabaseServerFactory(ServerFactory, CloudBoxFactoryMixin):
         connArgs, connKwargs = self.buildConnectionParameters()
         self.dbapi = ConnectionPool(self.settings["main"]["driver"], *connArgs, **connKwargs)
         # Perform basic validation check
-        self.dbapi.runQuery("SELECT name, value FROM cb_global_metadata").addBoth(self.checkTablesCallabck)
+        self.dbapi.runQuery('SELECT value FROM cb_global_metadata WHERE name="databaseVersion"').addBoth(self.checkTablesCallabck)
 
     def checkTablesCallabck(self, res):
         if isinstance(res, Failure):
-            self.logger.critical("Database validation check failed:")
+            self.logger.critical("Database validation check failed: Error occured.")
             self.logger.critical(res.getTraceback())
             self.parentService.stop()
+        elif res[0][0] != VERSION_NUMBER:
+            self.logger.critical("Database validation check failed: Database version and software version mismatch.")
+            self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0][0]))
+            self.parentService.stop()
         else:
-            self.logger.debug(str(res))
             self.ready = True
             self.logger.debug("Database API ready.")
 
@@ -52,9 +56,9 @@ class DatabaseServerFactory(ServerFactory, CloudBoxFactoryMixin):
         connArgs = []
         connKwargs = dict()
         try:
-            dbModule = __import__(("%s" % self.settings["main"]["driver"]))
+            __import__(("%s" % self.settings["main"]["driver"]))
         except ImportError:
-            self.logger.critical("Database module {dbModule} not found, stopping.".format(dbModule=dbModule))
+            self.logger.critical("Database module {dbModule} not found, stopping.".format(dbModule=self.settings["main"]["driver"]))
             self.parentService.stop()
         if self.settings["main"]["driver"] == "sqlite3":
             connKwargs["database"] = self.settings["driver"]["file"]
