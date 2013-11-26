@@ -44,7 +44,7 @@ class DatabaseServerFactory(ServerFactory, CloudBoxFactoryMixin):
             self.logger.critical("Database validation check failed: Error occured.")
             self.logger.critical(res.getTraceback())
             self.parentService.stop()
-        elif res[0][0] != VERSION_NUMBER:
+        elif int(res[0][0]) != VERSION_NUMBER:
             self.logger.critical("Database validation check failed: Database version and software version mismatch.")
             self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0][0]))
             self.parentService.stop()
