@@ -10,7 +10,7 @@ from cloudbox.common.constants import handlers
 
 
 class FetchDataHandler(BasePacketHandler):
-    @classmethod
+    @staticmethod
     def packData(data):
         return data["packer"].pack([
             handlers.TYPE_FETCH_DATA,
@@ -23,13 +23,13 @@ class FetchDataHandler(BasePacketHandler):
             data["extraParameters"]
         ])
 
-    @classmethod
+    @staticmethod
     def handleData(data):
         requestID, model, fields, condition, extraClauses, interpolation, extraParameters = data["packetData"][1:]
 
 
 class DirectQueryHandler(BasePacketHandler):
-    @classmethod
+    @staticmethod
     def packData(data):
         return data["packer"].pack([
             handlers.TYPE_DIRECT_QUERY,
@@ -40,7 +40,7 @@ class DirectQueryHandler(BasePacketHandler):
             data["isOperation"]  # Set to true to have the server run this as an operation
         ])
 
-    @classmethod
+    @staticmethod
     def handleData(data):
         requestID, query, interpolation, extraParameters, isOperation = data["packetData"][1:]
         if not requestID:
