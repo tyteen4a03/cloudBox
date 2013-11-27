@@ -6,20 +6,38 @@
 import hashlib
 
 from twisted.internet.task import LoopingCall
+from zope.interface import implements
 
-from cloudbox.common.handlers import BasePacketHandler
-from cloudbox.common.util import packString
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.classic import *
+from cloudbox.common.handlers import BasePacketHandler
+from cloudbox.common.interfaces import IMinecraftPacketHandler
+from cloudbox.common.util import packString
 
 
-class HandshakePacketHandler(BasePacketHandler):
+class BaseMinecraftPacketHandler(BasePacketHandler):
+    """
+    Base packet handler for all Minecraft packets.
+    """
+    implements(IMinecraftPacketHandler)
+
+    @classmethod
+    def unpackData(cls, data):
+        return TYPE_FORMATS[cls.packetID].decode(data)
+
+    @classmethod
+    def getExpectedLength(cls):
+        return len(TYPE_FORMATS[cls.packetID])
+
+
+class HandshakePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Login requests.
     """
+    packetID = TYPE_INITIAL
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         # Get the client's details
         protocol, data["parent"].username, mppass, utype = data["packetData"]
         if data["parent"].identified:
@@ -84,85 +102,66 @@ class HandshakePacketHandler(BasePacketHandler):
         data["parent"].loops.registerLoop("keepAlive", LoopingCall(data["parent"].sendKeepAlive)).start(1)
         #data["parent"].factory.runHook("onPlayerConnect", {"client": data["parent"]}) # Run the player connect hook
 
-    @staticmethod
-    def unpackData(data):
-        return TYPE_FORMATS[TYPE_INITIAL].decode(data)
-
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         return TYPE_FORMATS[TYPE_INITIAL].encode(data["protocolVersion"],
                                                  data["serverName"],
                                                  data["serverMOTD"],
                                                  data["userPermission"])
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_INITIAL])
 
-
-class KeepAlivePacketHandler(BasePacketHandler):
+class KeepAlivePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Keep Alives.
     """
+    packetID = TYPE_KEEPALIVE
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         return ""
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_KEEPALIVE])
 
-
-class LevelInitPacketHandler(BasePacketHandler):
+class LevelInitPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Level Initialization.
     """
+    packetID = TYPE_LEVELINIT
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_LEVELINIT])
 
-
-class LevelDataPacketHandler(BasePacketHandler):
+class LevelDataPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Level Chunks.
     """
+    packetID = TYPE_LEVELDATA
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_LEVELDATA])
 
-
-class LevelFinalizePacketHandler(BasePacketHandler):
+class LevelFinalizePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Level Finalization.
     """
+    packetID = TYPE_LEVELFINALIZE
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_LEVELFINALIZE])
 
-
-class BlockChangePacketHandler(BasePacketHandler):
+class BlockChangePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Block Changes.
     """
+    packetID = TYPE_BLOCKCHANGE
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         if data["serverType"] == SERVER_TYPES["WorldServer"]:
             x, y, z, created, block = data["packetData"]
             if not data["parent"].identified:
@@ -244,138 +243,98 @@ class BlockChangePacketHandler(BasePacketHandler):
             # Hand it over to the WorldServer
             data["parent"].factory.relayMCPacketToWorldServer(TYPE_BLOCKCHANGE, data["packetData"])
 
-    @staticmethod
-    def unpackData(data):
-        return TYPE_FORMATS[TYPE_BLOCKCHANGE].decode(data)
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_BLOCKCHANGE])
-
-
-class BlockSetPacketHandler(BasePacketHandler):
+class BlockSetPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for Setting a Block.
     """
+    packetID = TYPE_BLOCKSET
 
-    @staticmethod
-    def unpackData(data):
-        return TYPE_FORMATS[TYPE_BLOCKSET].decode(data)
-
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_BLOCKSET])
 
-
-class SpawnPlayerPacketHandler(BasePacketHandler):
+class SpawnPlayerPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for player spawning.
     """
+    packetID = TYPE_SPAWNPLAYER
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_SPAWNPLAYER])
 
-
-class PlayerPosPacketHandler(BasePacketHandler):
+class PlayerPosPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for player position updates.
     """
+    packetID = TYPE_PLAYERPOS
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         pass
 
-    @staticmethod
-    def unpackData(data):
-        return TYPE_FORMATS[TYPE_PLAYERPOS].decode(data)
-
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_PLAYERPOS])
 
-
-class PlayerOrtPacketHandler(BasePacketHandler):
+class PlayerOrtPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for player orientation updates.
     """
+    packetID = TYPE_PLAYERORT
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_PLAYERORT])
 
-
-class PlayerDespawnPacketHandler(BasePacketHandler):
+class PlayerDespawnPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for player despawning.
     """
+    packetID = TYPE_PLAYERDESPAWN
 
-    @staticmethod
-    def packData(data):
-        return TYPE_FORMATS[TYPE_PLAYERDESPAWN].encode(data["playerID"])
-
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_PLAYERDESPAWN])
+    @classmethod
+    def packData(cls, data):
+        return TYPE_FORMATS[cls.packetID].encode(data["playerID"])
 
 
-class MessagePacketHandler(BasePacketHandler):
+class MessagePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for messages.
     """
+    packetID = TYPE_MESSAGE
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         pass
 
-    @staticmethod
-    def unpackData(data):
-        return TYPE_FORMATS[TYPE_MESSAGE].decode(data)
-
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_MESSAGE])
 
-
-class ErrorPacketHandler(BasePacketHandler):
+class ErrorPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for error messages.
     """
+    packetID = TYPE_ERROR
 
-    @staticmethod
-    def packData(data):
-        return TYPE_FORMATS[TYPE_ERROR].encode(data["error"])
-
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_ERROR])
+    @classmethod
+    def packData(cls, data):
+        return TYPE_FORMATS[cls.packetID].encode(data["error"])
 
 
-class SetUserTypePacketHandler(BasePacketHandler):
+class SetUserTypePacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler for setting op permissions.
     """
+    packetID = TYPE_SETUSERTYPE
 
-    @staticmethod
-    def getExpectedLength():
-        return len(TYPE_FORMATS[TYPE_SETUSERTYPE])
+    @classmethod
+    def packData(cls, data):
+        pass

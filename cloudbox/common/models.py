@@ -3,14 +3,13 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from cloudbox.common.handlers import BasePacketHandler
+from cloudbox.common.peewee import *
 
 
-class StateUpdatePacketHandler(BasePacketHandler):
-    @classmethod
-    def handleData(cls, data):
-        pass
+class BaseModel(Model):
+    class Meta:
+        database = database
 
-    @classmethod
-    def packData(cls, data):
-        pass
+
+class WorldModel(TablePrefixDBObject):
+    pass

@@ -65,10 +65,10 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
         Load the world given the ID.
         If no ID is given, automatically generate one.
         """
-
+        pass
 
     def _loadWorld(self, filepath):
-
+        pass
 
     def unloadWorld(self, worldId):
         pass
@@ -99,6 +99,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
 
     def addWorld(self, worldName, filepath):
         """Adds the world to the database."""
-        self.dbConnector.
+        self.dbConnector.sendInsert()
 
     def deleteWorld(self, worldID):
+        self.dbConnector.sendDelete(worldID)

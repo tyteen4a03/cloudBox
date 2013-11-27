@@ -3,31 +3,31 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from cloudbox.common.handlers import BasePacketHandler
+from cloudbox.common.minecraft.handlers.classic import BaseMinecraftPacketHandler
 
 
-class ExtInfoPacketHandler(BasePacketHandler):
+class ExtInfoPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for handling extension information.
     """
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         pass
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass
 
-class ExtEntryPacketHandler(BasePacketHandler):
+class ExtEntryPacketHandler(BaseMinecraftPacketHandler):
     """
     A Handler class for handling extension entries.
     """
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         pass
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         pass

@@ -29,6 +29,12 @@ class CloudBoxProtocolMixin(object):
     A mixin class, providing common functions any cloudBox protocols can expect.
     """
 
+    def getServerName(self):
+        return self.factory.getServerName()
+
+    def getServerType(self):
+        return self.factory.getServerType()
+
     def sendPacket(self, packetID, packetData={}):
         self.transport.write(self.gpp.packPacket(packetID, packetData))
 

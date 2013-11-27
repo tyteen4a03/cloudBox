@@ -13,16 +13,7 @@ class BasePacketHandler(object):
     """
     Base packet handler.
     """
-
     implements(IPacketHandler)
-
-    @staticmethod
-    def packData(data):
-        pass
-
-    @staticmethod
-    def handleData(data):
-        pass
 
 
 class KeepAlivePacketHandler(BasePacketHandler):
@@ -30,8 +21,8 @@ class KeepAlivePacketHandler(BasePacketHandler):
     A Handler class for keep-alive.
     """
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         return "\x91\x00"  # This is static so might as well pre-pack it :D
 
 
@@ -40,8 +31,8 @@ class HandshakePacketHandler(BasePacketHandler):
     A Handler class for packet HandshakeRequest.
     """
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         if data["packetData"][1] == common.SERVER_TYPES["WorldServer"]:
             if data["serverType"] == common.SERVER_TYPES["HubServer"]:
                 # See if they are in our allowed list
@@ -54,8 +45,8 @@ class HandshakePacketHandler(BasePacketHandler):
         data["parent"].transport.loseConnection()
 
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         return data["packer"].pack([
             handlers.TYPE_HANDSHAKE,
             data["parent"].getServerName(),
@@ -68,8 +59,8 @@ class DisconnectPacketHandler(BasePacketHandler):
     A Handler class for Server Shutdown.
     """
 
-    @staticmethod
-    def handleData(data):
+    @classmethod
+    def handleData(cls, data):
         data["logger"].info("{} closed connection, reason: {}".format(
             common.SERVER_TYPES_INV[data["packetData"][0]], data["packetData"][2]))
         if data["parent"].remoteServerType == common.SERVER_TYPES["HubServer"]:
@@ -84,8 +75,8 @@ class DisconnectPacketHandler(BasePacketHandler):
             data["parent"].available = False
         data["parent"].transport.loseConnection()
 
-    @staticmethod
-    def packData(data):
+    @classmethod
+    def packData(cls, data):
         return data["packer"].pack([
             handlers.TYPE_DISCONNECT,
             data["serverType"],

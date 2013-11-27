@@ -8,19 +8,34 @@ from zope.interface import Interface, Attribute
 
 class IPacketHandler(Interface):
     """
-    Interface for all DataHandlers.
+    Interface for all PacketHandlers.
     """
+    packetID = Attribute("The packetID this PacketHandler handles.")
 
-    parent = Attribute("The parent the DataHandler belongs to.")
-
-    def handleData(baseVars, data):
+    def handleData(data):
         """
         Acts upon data.
         """
 
-    def packData(baseVars, data):
+    def packData(data):
         """
         Packs the data to the desired wire-transfer format.
+        """
+
+
+class IMinecraftPacketHandler(IPacketHandler):
+    """
+    Interface for PacketHandlers for Minecraft packets.
+    """
+
+    def unpackData(data):
+        """
+        Unpacks the data.
+        """
+
+    def getExpectedLength():
+        """
+        Returns the expected length of the packet.
         """
 
 

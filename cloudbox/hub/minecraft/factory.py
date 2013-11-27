@@ -9,8 +9,8 @@ from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.cpe import *
 from cloudbox.common.logger import Logger
 from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.minecraft.handlers import classic, cpe
 from cloudbox.common.mixins import CloudBoxFactoryMixin
-from cloudbox.hub.minecraft.handlers import classic, cpe
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
 

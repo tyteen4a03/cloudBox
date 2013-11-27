@@ -6,6 +6,7 @@
 import importlib
 
 import msgpack
+from twisted.internet.protocol import Factory
 from zope.interface import implements
 
 from cloudbox.common.interfaces import IGeneralPacketProcessor
