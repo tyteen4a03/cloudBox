@@ -38,5 +38,5 @@ def init(serv):
     reactor.run()
 
 
-def stop(serv):
+def shutdown(serv):
     reactor.stop()
