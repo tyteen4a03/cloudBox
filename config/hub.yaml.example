@@ -22,8 +22,6 @@ database:
     enabled: true
     ip: 127.0.0.1
     port: 5998
-log:
-    enable-debug: false
 advanced:
     endpoint-strings:
         clients:
