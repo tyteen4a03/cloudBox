@@ -41,6 +41,9 @@ class CloudBoxService(object):
         Specify reload to make the function reload the configuration. Note that by specifying reload, the function
         assumes that the related factories exist.
         """
+        with open("config/common.yaml", "r") as f:
+            s = f.read()
+            self.settings["common"] = yaml.load(s, Loader)
         if self.serverType == SERVER_TYPES["HubServer"]:
             with open("config/hub.yaml", "r") as f:
                 s = f.read()
