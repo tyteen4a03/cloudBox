@@ -33,17 +33,15 @@ class HandshakePacketHandler(BasePacketHandler):
 
     @classmethod
     def handleData(cls, data):
-        if data["packetData"][1] == common.SERVER_TYPES["WorldServer"]:
-            if data["serverType"] == common.SERVER_TYPES["HubServer"]:
-                # See if they are in our allowed list
-                if not data["parent"].transport.getPeer().host in \
-                        data["parent"].factory.settings["main"]["allowed-ips"]:
-                    # Refuse connection
-                    data["parent"].sendError("You are not connecting from an authorized IP.")
-                    data["parent"].transport.loseConnection()
-        data["parent"].sendError("Die potato")
-        data["parent"].transport.loseConnection()
-
+        # See if they are in our allowed list
+        if not data["parent"].transport.getPeer().host in data["parent"].factory.settings["main"]["allowed-ips"]:
+            # Refuse connection
+            data["parent"].sendError("You are not connecting from an authorized IP.")
+            data["parent"].transport.loseConnection()
+        if data["packetData"][1] not in common.SERVER_TYPES:
+            # Who are you?
+            data["parent"].sendError("Server type undefined.")
+            data["parent"].transport.loseConnection()
 
     @classmethod
     def packData(cls, data):

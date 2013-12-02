@@ -31,6 +31,7 @@ class DatabaseServerFactory(ServerFactory, CloudBoxFactoryMixin):
 
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_DATABASE_SERVER.items())
+        h[TYPE_HANDSHAKE] = ("cloudbox.database.handlers", "DatabaseClientPacketHandler")
         return h
 
     def startFactory(self):

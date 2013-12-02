@@ -30,6 +30,7 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin):
 
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())
+        h[TYPE_HANDSHAKE] = ("cloudbox.hub.handlers", "HubHandshakePacketHandler")
         return h
 
     def getServerStats(self):

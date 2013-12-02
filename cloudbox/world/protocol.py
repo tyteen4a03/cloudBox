@@ -6,8 +6,6 @@
 from msgpack import Packer
 from twisted.internet.protocol import Protocol
 
-from cloudbox.common.constants.common import *
-from cloudbox.common.constants.handlers import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxProtocolMixin
@@ -34,9 +32,6 @@ class WorldServerProtocol(Protocol, CloudBoxProtocolMixin):
     def dataReceived(self, data):
         self.gpp.feed(data)
         self.gpp.parseFirstPacket()
-
-    def sendPacket(self, packetID, packetData={}):
-        self.transport.write(self.gpp.packPacket(packetID, packetData))
 
     def connectionLost(self, reason):
         self.logger.error("Connection to Hub Server lost: {reason}".format(reason=reason))

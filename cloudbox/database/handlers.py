@@ -3,10 +3,20 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-import random
-
-from cloudbox.common.handlers import BasePacketHandler
+from cloudbox.common.handlers import BasePacketHandler, HandshakePacketHandler
 from cloudbox.common.constants import handlers
+
+
+class DatabaseClientHandshakePacketHandler(HandshakePacketHandler):
+    @classmethod
+    def handleData(cls, data):
+        super(DatabaseClientHandshakePacketHandler, cls).handleData(data)
+
+
+class DatabaseServerHandshakePacketHandler(HandshakePacketHandler):
+    @classmethod
+    def handleData(cls, data):
+        super(DatabaseClientHandshakePacketHandler, cls).handleData(data)
 
 
 class FetchDataHandler(BasePacketHandler):
@@ -62,3 +72,6 @@ class QueryResultHandler(BasePacketHandler):
         if not data["isOperation"]:
             l.append(data["resource"])
         return data["packer"].pack(l)
+
+    @classmethod
+    def handleData(cls, data):
