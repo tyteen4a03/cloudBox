@@ -77,7 +77,7 @@ class DisconnectPacketHandler(BasePacketHandler):
     def packData(cls, data):
         return data["packer"].pack([
             handlers.TYPE_DISCONNECT,
-            data["serverType"],
+            data["serverType"], # In case the handshake failed
             data["disconnectType"],
             data["message"]
         ])

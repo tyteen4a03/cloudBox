@@ -4,4 +4,6 @@ main:
     server-name: server1 # Internal server name, for display purposes only. Be creative!
     hub-ip: 127.0.0.1
     hub-port: 25000
+    database-ip: 127.0.0.1
+    database-port: 5998
     world-directory: worlds

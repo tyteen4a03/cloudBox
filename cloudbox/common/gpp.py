@@ -44,6 +44,12 @@ class BaseGeneralPacketProcessor(object):
     def packPacket(self, packetID, packetData):
         pass
 
+    def _mergeWithBaseDictionary(self, theDict):
+        """
+        Merges theDict with the base dictionary.
+        """
+        return dict(**self.baseVariables, **theDict)  # Because I'm lazy
+
 
 class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
     """
@@ -59,6 +65,7 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         super(MSGPackPacketProcessor, self).__init__(parent, handlers)
         self.baseVariables["packer"] = self.packer
         self.baseVariables["unpacker"] = self.unpacker
+        self.requests = {}  # Request ID: callback
 
     def feed(self, data):
         self.unpacker.feed(data)
@@ -81,15 +88,12 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         if handler not in self.handlersClassRefs.keys():
             self.initHandlerClass(handler)
         # Pass it on to the handler to handle this request
-        # TODO Unify this
-        dataDict = self.baseVariables
-        dataDict["packetData"] = data[1:]  # Don't pass the packet ID
-        self.handlersClassRefs[handler].handleData(dataDict)
+        self.handlersClassRefs[handler].handleData(self._mergeWithBaseDictionary({"packetData": data[1:]}))
 
-    def packPacket(self, packetID, packetData):
+    def packPacket(self, packetID, packetData, callback=None):
         if packetID not in self.handlersClassRefs.keys():
             self.initHandlerClass(packetID)
-        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables))
+        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables, callback=callback))
 
     def initHandlerClass(self, handlerID):
         # Grab the class
@@ -130,8 +134,4 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
         packetData = list(packetFormat.unpackData(self.buffer[1:]))
         self.buffer = self.buffer[expectedLength + 1:]
         # Pass it on to the handler to handle this request
-        # TODO Unify that
-        self.handlers[packetType].handleData(dict({
-            "parent": self.parent,
-            "packetData": packetData
-        }, **self.baseVariables))
+        self.handlers[packetType].handleData(self._mergeWithBaseDictionary({"packetData": packetData}))

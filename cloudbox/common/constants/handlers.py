@@ -14,11 +14,13 @@ TYPE_HANDSHAKE = 0x01
 
 TYPE_STATEID_ALLOCATION = 0x30
 TYPE_STATE_UPDATE = 0x31
+TYPE_LOAD_WORLD = 0x32
 
 TYPE_FETCH_DATA = 0x50
 TYPE_DIRECT_QUERY = 0x51  # Use FetchData whenever possible. Should only be used for complex queries and/or testing only.
 TYPE_QUERY_RESULT = 0x52
 
+TYPE_ERROR = 0xFE
 TYPE_DISCONNECT = 0xFF
 
 # Handlers - the basics
@@ -28,6 +30,7 @@ HANDLERS_CLIENT_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
     #0x02: "cloudbox.common.handlers", # Placeholder for encryption, unused for now
+    TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
 
@@ -36,11 +39,13 @@ HANDLERS_SERVER_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
     #0x02: ["handshakeEncrypt", "cloudbox.common.handlers"], # Placeholder for encryption, unused for now
+    TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
 HANDLERS_WORLD_SERVER = {
     TYPE_STATEID_ALLOCATION: ("cloudbox.world.handlers", "ClientStateIDAllocationPacketHandler"),
-    TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "ClientStateUpdatePacketHandler")
+    TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "ClientStateUpdatePacketHandler"),
+    TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }
 
 HANDLERS_DATABASE_SERVER = {

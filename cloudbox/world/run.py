@@ -6,12 +6,14 @@
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
+from cloudbox.database.client.factory import DatabaseClientFactory
 from cloudbox.world.factory import WorldServerFactory
 
 
 def init(serv):
     # Minecraft part of the Hub
     serv.factories["WorldServerFactory"] = WorldServerFactory(serv)
+    serv.factories["DatabaseClientFactory"] = DatabaseClientFactory(serv)
 
     # Populate configuration.
     serv.loadConfig()
@@ -19,6 +21,9 @@ def init(serv):
     # Start up everything.
     TCP4ClientEndpoint(reactor, serv.settings["world"]["main"]["hub-ip"],
                        serv.settings["world"]["main"]["hub-port"]).connect(serv.factories["WorldServerFactory"])
+
+    TCP4ClientEndpoint(reactor, serv.settings["world"]["main"]["database-ip"],
+                       serv.settings["world"]["main"]["database-port"]).connect(serv.factories["DatabaseClientFactory"])
 
     reactor.run()
 

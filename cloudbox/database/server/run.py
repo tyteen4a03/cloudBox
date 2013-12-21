@@ -17,8 +17,7 @@ def init(serv):
     serv.loadConfig()
 
     # Start up everything.
-    TCP4ServerEndpoint(reactor, serv.settings["database"]["main"]["port"])\
-        .listen(serv.factories["DatabaseServerFactory"])
+    TCP4ServerEndpoint(reactor, serv.settings["database"]["main"]["port"]).listen(serv.factories["DatabaseServerFactory"])
 
     reactor.run()
 

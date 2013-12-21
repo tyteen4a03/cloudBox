@@ -4,8 +4,9 @@
 # cloudBox Package.
 
 from twisted.internet import reactor
-from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.internet.endpoints import TCP4ServerEndpoint, TCP4ClientEndpoint
 
+from cloudbox.database.client.factory import DatabaseClientFactory
 from cloudbox.hub.heartbeat import HeartbeatService
 from cloudbox.hub.minecraft.factory import MinecraftHubServerFactory
 from cloudbox.hub.world.factory import WorldServerCommServerFactory
@@ -16,6 +17,8 @@ def init(serv):
     serv.factories["MinecraftHubServerFactory"] = MinecraftHubServerFactory(serv)
     # WorldServer part of the Hub
     serv.factories["WorldServerCommServerFactory"] = WorldServerCommServerFactory(serv)
+    # DatabaseClient part of the Hub
+    serv.factories["DatabaseClientFactory"] = DatabaseClientFactory(serv)
 
     # Populate configuration.
     serv.loadConfig()
@@ -25,6 +28,8 @@ def init(serv):
         .listen(serv.factories["MinecraftHubServerFactory"])
     TCP4ServerEndpoint(reactor, serv.settings["hub"]["main"]["ports"]["worldservers"])\
         .listen(serv.factories["WorldServerCommServerFactory"])
+    TCP4ClientEndpoint(reactor, serv.settings["hub"]["db"]["ip"], serv.settings["hub"]["db"]["port"])\
+        .connect(serv.factories["WorldServerCommServerFactory"])
 
     # Heartbeat Service
     if serv.settings["hub"]["heartbeat"]["send-heartbeat"]:

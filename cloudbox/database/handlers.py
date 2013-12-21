@@ -16,7 +16,7 @@ class DatabaseClientHandshakePacketHandler(HandshakePacketHandler):
 class DatabaseServerHandshakePacketHandler(HandshakePacketHandler):
     @classmethod
     def handleData(cls, data):
-        super(DatabaseClientHandshakePacketHandler, cls).handleData(data)
+        super(DatabaseServerHandshakePacketHandler, cls).handleData(data)
 
 
 class FetchDataHandler(BasePacketHandler):

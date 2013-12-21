@@ -32,6 +32,9 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
     def getWSFactoryInstance(self):
         return self.parentService.factories["WorldServerCommServerFactory"]
 
+    def getDBClientInstance(self):
+        return self.parentService.factories["DatabaseClientFactor"].instance
+
     def buildHandlers(self):
         handlers = {
             TYPE_INITIAL: classic.HandshakePacketHandler,
@@ -107,7 +110,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
         mode = self.settings["main"]["entry-mode"]
         if mode == "solo":
             # Find out which WS has the default world and join it
-            self.things
+            self.
         elif mode == "distributed":
             # Find out which WS has the default world and join any of them.
             self.otherThings

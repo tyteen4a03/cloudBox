@@ -24,10 +24,19 @@ DEFAULT_PERMISSIONS = {
 }
 
 # Errors
+ERRORS = {
+    # The very very generic errors
+    "unknown": 0,
+    "ioerror": 1,
+    # GPP
+    "not_enough_data": 10,
+    "handler_not_found": 11,
+    "corrupt_data": 12,
+    # Hub <-> World methods error
+    "world_file_not_found": 200
+}
 
-ERR_NOT_ENOUGH_DATA = 100
-ERR_METHOD_NOT_FOUND = 101
-ERR_UNABLE_TO_PARSE_DATA = 102
+ERRORS_INV = dict((v, k) for k, v in ERRORS.iteritems())
 
 # Disconnect types
 DISCONNECT_GENERIC = 0
