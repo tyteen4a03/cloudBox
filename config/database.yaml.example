@@ -4,7 +4,6 @@ main:
     mode: server # Server or client. Only server is suppported at the moment.
     driver: sqlite3 # A valid python DBAPI package.
     port: 5998
-    table-prefix: cb_
 
     # Server mode specific configurations
     access-control: ip-whitelist
