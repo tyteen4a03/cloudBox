@@ -4,6 +4,7 @@
 # cloudBox Package.
 
 from twisted.internet.protocol import Protocol
+from cloudbox.common.constants.handlers import *
 
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.logger import Logger
@@ -12,12 +13,14 @@ from cloudbox.common.mixins import CloudBoxProtocolMixin
 
 class DatabaseClientProtocol(Protocol, CloudBoxProtocolMixin):
     """
-    I am a Protocol for the World Server.
+    I am a Protocol for the DatabaseServer Client.
     """
 
-    def sendDirectQuery(self):
+    def __init__(self):
+        # Requests waiting for a response from the DatabaseServer. Format: {requestID: callback}
+        self.requests = {}
 
-    ### Twisted-related functions ###
+    ### Twisted methods ###
 
     def makeConnection(self, transport):
         self.logger = Logger()
@@ -36,6 +39,9 @@ class DatabaseClientProtocol(Protocol, CloudBoxProtocolMixin):
 
     def connectionLost(self, reason):
         self.logger.error("Connection to Hub Server lost: {reason}".format(reason=reason))
+
+    def sendDirectQuery(self, ):
+        self.sendPacket(TYPE_DIRECT_QUERY, )
 
     @property
     def remoteServerType(self):

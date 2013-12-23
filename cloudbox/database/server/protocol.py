@@ -17,7 +17,6 @@ class DatabaseServerProtocol(Protocol, CloudBoxProtocolMixin):
     """
 
     def __init__(self):
-        self.requests = dict()
         self.gpp = None
         self.remoteServerType = None
         self.requests = dict()

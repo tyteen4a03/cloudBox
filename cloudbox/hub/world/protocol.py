@@ -49,7 +49,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
 
     ### End-client related functions ###
 
-    def protoDoJoinServer(self, proto):
+    def protoDoJoinServer(self, proto, world=None):
         """
         Makes the protocol join the server.
         """

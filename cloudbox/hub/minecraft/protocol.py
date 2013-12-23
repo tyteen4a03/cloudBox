@@ -87,6 +87,18 @@ class MinecraftHubServerProtocol(Protocol):
         """
         self.sendPacket(TYPE_MESSAGE, {"message": message})
 
+    def sendChanneledMessage(self, message, channel):
+        """
+        Sends a message that has a channel.
+        """
+        self.sendMessage(message)
+
+    def sendServerMessage(self, message, channel=None):
+        """
+        Shortcut for sending a server-like messgae to the client (yellow messgaes)
+        """
+        self.sendChanneledMessage("&e" + message, channel=None)
+
     def sendKeepAlive(self):
         """
         Sends a ping to the client.
@@ -104,6 +116,55 @@ class MinecraftHubServerProtocol(Protocol):
             # TODO
             return
 
-    ### Relay functions ###
-    def relayClientData(self):
+    ### Relay ###
+
+    def relayClientData(self, handlerID, data):
         pass
+
+    ### Actions  ###
+
+    def _joinWorldFailedErrback(self, err):
+        """
+        Callback for when world joining failed
+        """
+        if self.world is None:  # We are newbies
+            self.sendError("World loading failed - {}".format(str(err)))
+        else:
+            self.sendServerMessage("World loading failed - {}".format(str(err)))
+        # Cancel any stuff if needed to
+
+
+    def joinDefaultWorld(self, proto):
+        """
+        Joins the default world.
+        """
+        mode = self.settings["main"]["entry-mode"]
+        if mode == "solo":
+            # Find out which WS has the default world and join it
+            def afterGetDefaultWorld(res):
+                row = res.fetch_row()
+                # Get world server link
+                wsProto = self.getWSFactoryInstance().clients[row[3]]
+                # Send the player over
+                wsProto.protoDoJoinServer(proto, world=row[3])
+            self.getDBClientInstance().requests.add({
+                    "query": "SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1",
+                    "args": [],
+                    "cb": afterGetDefaultWorld,
+                    "eb": self._joinWorldFailedErrback
+            })
+        elif mode == "distributed":
+            # Find out which WS has the default world and join any of them.
+            self.otherThings()
+
+    def joinWorldServer(self, proto, wsID):
+        """
+        Joins a World Server given its ID.
+        """
+        pass
+
+    def leaveWorldServer(self, proto, wsID):
+        """
+        Leaves the current worldServer.
+        """
+        self.getWSFactoryInstance().leaveWorldServer(proto, wsID)

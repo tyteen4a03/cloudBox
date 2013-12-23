@@ -14,6 +14,7 @@ from cloudbox.common.exceptions import makeFailure
 from cloudbox.world.interfaces import IWorldFormat
 from cloudbox.world.worlds.classic import ClassicWorld
 
+
 class ClassicWorldWorldFormat(object):
     implements(IWorldFormat)
 

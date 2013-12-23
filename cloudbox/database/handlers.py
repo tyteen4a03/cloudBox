@@ -29,7 +29,7 @@ class FetchDataHandler(BasePacketHandler):
             data["fields"],
             data["condition"],
             data["extraClauses"],
-            data["interpolation"],
+            data["args"],
             data["extraParameters"]
         ])
 
@@ -45,21 +45,21 @@ class DirectQueryHandler(BasePacketHandler):
             handlers.TYPE_DIRECT_QUERY,
             data["requestID"],
             data["query"],
-            data["interpolation"],
+            data["args"],
             data["extraParameters"],  # ???
             data["isOperation"]  # Set to true to have the server run this as an operation
         ])
 
     @classmethod
     def handleData(cls, data):
-        requestID, query, interpolation, extraParameters, isOperation = data["packetData"][1:]
+        requestID, query, args, extraParameters, isOperation = data["packetData"][1:]
         if not requestID:
             f = data["parent"].factory.dbapi.runOperation
         else:
             f = data["parent"].factory.dbapi.runQuery
-        d = f(query, interpolation, extraParameters).addCallback(data["parent"].standardQueryCallback, requestID)
+        d = f(query, args, extraParameters).addCallback(data["parent"].standardQueryCallback, requestID)
         # Make a copy in the protocol requests dict and in the master list.
-        data["parent"]
+        data["parent"].requests
 
 
 class QueryResultHandler(BasePacketHandler):
@@ -67,6 +67,7 @@ class QueryResultHandler(BasePacketHandler):
     def packData(cls, data):
         l = [
             handlers.TYPE_QUERY_RESULT,
+            data["requestID"],
             data["result"],
         ]
         if not data["isOperation"]:

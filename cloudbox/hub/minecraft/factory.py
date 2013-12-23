@@ -102,31 +102,6 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
                     theList[cEntry["username"].lower()] = cEntry["protocol"]
         return theList
 
-    def joinDefaultWorld(self, proto):
-        """
-        Joins the default world.
-        """
-        return
-        mode = self.settings["main"]["entry-mode"]
-        if mode == "solo":
-            # Find out which WS has the default world and join it
-            self.
-        elif mode == "distributed":
-            # Find out which WS has the default world and join any of them.
-            self.otherThings
-
-    def joinWorldServer(self, proto, wsID):
-        """
-        Joins a World Server given its ID.
-        """
-        pass
-
-    def leaveWorldServer(self, proto, wsID):
-        """
-        Leaves the current worldServer.
-        """
-        self.getWSFactoryInstance().leaveWorldServer(proto, wsID)
-
     def getBans(self, *args):
         """
         Fetches the ban information using the information given - username, IP, or both.
