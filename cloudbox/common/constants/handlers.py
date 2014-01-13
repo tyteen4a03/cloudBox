@@ -53,3 +53,28 @@ HANDLERS_DATABASE_SERVER = {
     TYPE_DIRECT_QUERY: ("cloudbox.database.handlers", "DirectQueryPacketHandler"),
     TYPE_QUERY_RESULT: ("cloudbox.database.handlers", "QueryResultPacketHandler"),
 }
+
+# Future consideration: Unused for now
+
+#from collections import namedtuple
+
+
+class namedtuple(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+# Packet definition
+BASE_PACKET = namedtuple("Packet", ["packetID", "packetData"])
+
+PACKET_DEFS = {}
+
+PACKET_DEFS[TYPE_KEEPALIVE] = namedtuple("KeepAlivePacket", [])
+PACKET_DEFS[TYPE_HANDSHAKE] = namedtuple("HandshakePacket", ["serverName", "serverType"])
+PACKET_DEFS[TYPE_STATEID_ALLOCATION] = namedtuple("StateIDAllocationPacket", ["requestID", ""])
+PACKET_DEFS[TYPE_STATE_UPDATE] = namedtuple("StateUpdatePacket", ["playerID", "updates"])
+PACKET_DEFS[TYPE_LOAD_WORLD] = namedtuple("LoadWorldPacket", [])
+PACKET_DEFS[TYPE_FETCH_DATA] = namedtuple("FetchDataPacket", [])
+PACKET_DEFS[TYPE_DIRECT_QUERY] = namedtuple("DirectQueryPacket", [])
+PACKET_DEFS[TYPE_QUERY_RESULT] = namedtuple("QueryResultPacket", [])
+PACKET_DEFS[TYPE_ERROR] = namedtuple("ErrorPacket", [])
+PACKET_DEFS[TYPE_DISCONNECT] = namedtuple("DisconnectPacket", [])

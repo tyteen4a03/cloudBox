@@ -8,6 +8,6 @@ from cloudbox.web.webhandlers.base import BaseRequestHandler
 
 class IndexRequestHandler(BaseRequestHandler):
     def get(self, *args, **kwargs):
-        self.write("Hello Worlds!")
+        self.write(self.templater.get_template("index.html").render())
 
     post = get

@@ -3,11 +3,12 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 from twisted.internet.protocol import ServerFactory
 
 from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.cpe import *
-from cloudbox.common.logger import Logger
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.minecraft.handlers import classic, cpe
 from cloudbox.common.mixins import CloudBoxFactoryMixin
@@ -23,7 +24,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
     def __init__(self, parentService):
         self.parentService = parentService
         self.clients = {}
-        self.logger = Logger()
+        self.logger = logging.getLogger("cloudbox.hub.mc.factory")
         self.loops = LoopRegistry()
 
     def startFactory(self):

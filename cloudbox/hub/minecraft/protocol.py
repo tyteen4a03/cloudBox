@@ -3,12 +3,13 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, connectionDone as _connDone
 
 from cloudbox.common.constants.classic import *
 from cloudbox.common.gpp import MinecraftClassicPacketProcessor
-from cloudbox.common.logger import Logger
 from cloudbox.common.loops import LoopRegistry
 
 
@@ -18,14 +19,15 @@ class MinecraftHubServerProtocol(Protocol):
     """
 
     def __init__(self):
-        self.id = None
+        self.playerID = None # UID, stored in DB
+        self.sessionID = None # Session ID, used to communicate between client and server
         self.ip = None
         self.gpp = None
         self.username = None
         self.wsID = None  # World Server this user belongs to
         self.identified = False
         self.state = {}  # A special dict used to hold temporary "signals"
-        self.logger = Logger()
+        self.logger = logging.getLogger("cloudbox.hub.mc.protocol._default") # This will be replaced once we get a proper ID
 
     ### Twisted Methods ###
 
@@ -34,18 +36,19 @@ class MinecraftHubServerProtocol(Protocol):
         Called when a connection is made.
         """
         # Get an ID for ourselves
-        self.id = self.factory.claimID(self)
-        if self.id is None:
+        self.sessionID = self.factory.claimID(self)
+        if self.sessionID is None:
             self.sendError("The server is full.")
             return
         self.ip = self.transport.getPeer().host
+        self.logger = logging.getLogger("cloudbox.hub.mc.protocol.{}".format(self.sessionID))
         self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers)
 
     def connectionLost(self, reason=_connDone):
         # Leave the world
         self.factory.leaveWorldServer(self, self.wsID)
         # Release our ID
-        self.factory.releaseID(self.id)
+        self.factory.releaseID(self.sessionID)
 
     def dataReceived(self, data):
         """

@@ -3,10 +3,11 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 from jinja2 import Environment, FileSystemLoader
 from tornado import web
 
-from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxFactoryMixin
 from cloudbox.web.webhandlers import index
 
@@ -22,8 +23,8 @@ class WebServerApplication(web.Application, CloudBoxFactoryMixin):
         self.handlers = [
             (r"/", index.IndexRequestHandler)
         ]
-        self.logger = Logger()
-        self.templateEnvironment = Environment(loader=FileSystemLoader("./templates"))
+        self.logger = logging.getLogger("cloudbox.web")
+        self.templater = Environment(loader=FileSystemLoader("./web/templates"))
         web.Application.__init__(self, self.handlers, **self.parentService.settings["web"]["web-server-settings"])
 
     def log_request(self, handler):

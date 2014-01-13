@@ -13,7 +13,7 @@ VERSION_NUMBER = 1000011
 SERVER_TYPES = {
     "HubServer": 0,
     "WorldServer": 1,
-    "DatabaseServer": 2,
+    "WebServer": 2,
     "HeartbeatService": 3,
 }
 

@@ -4,13 +4,13 @@
 # cloudBox Package.
 
 import importlib
+import logging
 
 import msgpack
 from twisted.internet.protocol import Factory
 from zope.interface import implements
 
 from cloudbox.common.interfaces import IGeneralPacketProcessor
-from cloudbox.common.logger import Logger
 
 
 class BaseGeneralPacketProcessor(object):
@@ -19,11 +19,13 @@ class BaseGeneralPacketProcessor(object):
     """
     implements(IGeneralPacketProcessor)
 
+    name = None
+
     def __init__(self, parent, handlers, serverType=None):
         self.parent = parent
         self.handlers = handlers
         self.handlersClassRefs = {}
-        self.logger = Logger()
+        self.logger = logging.getLogger("cloudbox.gpp.{}".format(self.name))
         self.baseVariables = {}
         if serverType:
             self.serverType = serverType
@@ -55,6 +57,8 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
     """
     A General Packet Processor for MSGPack packets.
     """
+
+    name = "msgpack"
 
     def __init__(self, parent, handlers):
         """
@@ -106,7 +110,7 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
     """
     A General Packet Processor for Minecraft packets.
     """
-    implements(IGeneralPacketProcessor)
+    name = "minecraft"
 
     def __init__(self, parent, handlers):
         super(MinecraftClassicPacketProcessor, self).__init__(parent, handlers)

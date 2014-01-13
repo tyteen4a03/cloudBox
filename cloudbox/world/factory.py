@@ -3,11 +3,12 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 from twisted.internet.protocol import ReconnectingClientFactory
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
-from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxFactoryMixin
 from cloudbox.world.protocol import WorldServerProtocol
 
@@ -22,7 +23,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
 
     def __init__(self, parentService):
         self.parentService = parentService
-        self.logger = Logger()
+        self.logger = logging.getLogger("cloudbox.world.factory")
         self.worlds = []
         self.clients = {}  # {clientID: client ID (assigned by HubServer), clientStates: dict of states}
         self.instance = None

@@ -23,6 +23,10 @@ class CloudBoxFactoryMixin(object):
     def getFactory(self, factoryName):
         return self.parentService.factories[factoryName]
 
+    @property
+    def db(self):
+        return self.parentService.db
+
 
 class CloudBoxProtocolMixin(object):
     """
@@ -49,3 +53,7 @@ class CloudBoxProtocolMixin(object):
 
     def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, message=""):
         self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "message": message})
+
+    @property
+    def db(self):
+        return self.factory.parentService.db

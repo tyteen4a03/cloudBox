@@ -19,7 +19,7 @@ class WorldServerProtocol(Protocol, CloudBoxProtocolMixin):
     ### Twisted-related functions ###
 
     def makeConnection(self, transport):
-        self.logger = Logger()
+        self.logger = self.factory.logger
         self.transport = transport
         self.ready = False  # Set to False to prevent new connections
         self.gpp = MSGPackPacketProcessor(self, self.factory.handlers)

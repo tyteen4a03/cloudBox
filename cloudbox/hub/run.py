@@ -28,8 +28,6 @@ def init(serv):
         .listen(serv.factories["MinecraftHubServerFactory"])
     TCP4ServerEndpoint(reactor, serv.settings["hub"]["main"]["ports"]["worldservers"])\
         .listen(serv.factories["WorldServerCommServerFactory"])
-    TCP4ClientEndpoint(reactor, serv.settings["hub"]["db"]["ip"], serv.settings["hub"]["db"]["port"])\
-        .connect(serv.factories["WorldServerCommServerFactory"])
 
     # Heartbeat Service
     if serv.settings["hub"]["heartbeat"]["send-heartbeat"]:

@@ -14,10 +14,6 @@ The Hub Server handles communication between Minecraft Clients and World Servers
 
 The World Server hosts the actual world files. Aside from handling clients, the World Server is also equipped with a physics engine and a world generator. The World Server also handles commands. The architecture allows multiple World Servers to be run.
 
-## Database Server
-
-The Database Server handles communication between other servers and the database, providing an abstraction layer between a DBMS and the servers.
-
 ## Web Server
 
 The Web server provides the website front-end to the server, allowing users to change settings of their worlds. It also operates an API that websites can query from.

@@ -3,6 +3,7 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
 import urllib
 
 from twisted.internet import reactor
@@ -13,7 +14,6 @@ from twisted.web.http_headers import Headers
 from twisted.web.iweb import IBodyProducer
 from zope.interface import implements
 
-from cloudbox.common.logger import Logger
 from cloudbox.common.constants.common import VERSION
 
 
@@ -40,22 +40,23 @@ class HeartbeatService(object):
     I send heartbeats to Minecraft.net/ClassiCube every so often.
     """
 
-    def __init__(self, parentService, hburl):
+    def __init__(self, parentService, serviceName, hburl):
         self.parentService = parentService
+        self.serviceName = serviceName
         self.hburl = hburl
-        self.logger = Logger()
+        self.logger = logging.getLogger("cloudbox.heartbeat.{}".format(self.serviceName))
         self.agent = Agent(reactor)
         self.loop = None
         self.running = False
 
     def start(self):
         self.loop = LoopingCall(self.sendHeartbeat).start(30)  # TODO Dynamic timeframe
-        self.logger.info("HeartbeatService to %s started." % self.hburl)
+        self.logger.info("HeartbeatService to %s started." % self.serviceName)
         self.running = True
 
     def stop(self):
         self.loop.stop()
-        self.logger.info("HeartbeatService to %s stopped." % self.hburl)
+        self.logger.info("HeartbeatService to %s stopped." % self.serviceName)
         self.running = False
 
     def getMCFactoryInstance(self):
@@ -87,7 +88,7 @@ class HeartbeatService(object):
         ).addCallbacks(self.heartbeatSentCallback).addErrback(self.heartbeatFailedCallback)
 
     def heartbeatSentCallback(self, thing):
-        self.logger.info("Heartbeat successfully sent to %s." % self.hburl)
+        self.logger.info("Heartbeat successfully sent to %s." % self.serviceName)
 
     def heartbeatFailedCallback(self, failure):
         self.logger.warn("Heartbeat failed to send. Error: %s" % str(failure))

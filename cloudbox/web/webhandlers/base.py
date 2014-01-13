@@ -10,3 +10,7 @@ class BaseRequestHandler(RequestHandler):
     @property
     def db(self):
         return self.application.parentService.db
+
+    @property
+    def templater(self):
+        return self.application.templater

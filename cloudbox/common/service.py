@@ -3,6 +3,8 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 # YAML
 import yaml
 try:
@@ -29,13 +31,11 @@ class CloudBoxService(object):
         self.loops = LoopRegistry()
         self.factories = {}
         self.settings = {}
-
-    def getServerType(self):
-        return self.serverType
+        self.db = None
 
     # TODO Factorize below methods
 
-    def loadConfig(self, reload=False):
+    def loadConfig(self, populate=True, reload=False):
         """
         Loads the configuration file, depending on the SERVER_TYPE of the server.
         Specify reload to make the function reload the configuration. Note that by specifying reload, the function
@@ -48,25 +48,25 @@ class CloudBoxService(object):
             with open("config/hub.yaml", "r") as f:
                 s = f.read()
             self.settings["hub"] = yaml.load(s, Loader)
-        elif self.serverType == SERVER_TYPES["DatabaseServer"]:
-            with open("config/database.yaml", "r") as f:
-                s = f.read()
-            self.settings["database"] = yaml.load(s, Loader)
         elif self.serverType == SERVER_TYPES["WorldServer"]:
             with open("config/world.yaml", "r") as f:
                 s = f.read()
             self.settings["world"] = yaml.load(s, Loader)
-        self.populateConfig(reload)
+        elif self.serverType == SERVER_TYPES["WebServer"]:
+            with open("config/web.yaml", "r") as f:
+                s = f.read()
+            self.settings["web"] = yaml.load(s, Loader)
+        if populate: self.populateConfig(reload)
 
     def populateConfig(self, reload=False):
         # Send the configuration to the respective factories
         if self.serverType == SERVER_TYPES["HubServer"]:
             self.factories["MinecraftHubServerFactory"].settings = self.settings["hub"]
             self.factories["WorldServerCommServerFactory"].settings = self.settings["hub"]
-        if self.serverType == SERVER_TYPES["WorldServer"]:
+        elif self.serverType == SERVER_TYPES["WorldServer"]:
             self.factories["WorldServerFactory"].settings = self.settings["world"]
-        if self.serverType == SERVER_TYPES["DatabaseServer"]:
-            self.factories["DatabaseServerFactory"].settings = self.settings["database"]
+        elif self.serverType == SERVER_TYPES["WebServer"]:
+            self.factories["WebServerApplication"].settings = self.settings["web"]
 
     def start(self):
         """
@@ -75,12 +75,12 @@ class CloudBoxService(object):
         if self.serverType == SERVER_TYPES["HubServer"]:
             from cloudbox.hub.run import init as hubInit
             hubInit(self)
-        elif self.serverType == SERVER_TYPES["DatabaseServer"]:
-            from cloudbox.database.server.run import init as dbInit
-            dbInit(self)
         elif self.serverType == SERVER_TYPES["WorldServer"]:
             from cloudbox.world.run import init as worldInit
             worldInit(self)
+        elif self.serverType == SERVER_TYPES["WebServer"]:
+            from cloudbox.web.run import init as webInit
+            webInit(self)
 
     def stop(self):
         """
@@ -89,9 +89,9 @@ class CloudBoxService(object):
         if self.serverType == SERVER_TYPES["HubServer"]:
             from cloudbox.hub.run import shutdown as hubShutdown
             hubShutdown(self)
-        elif self.serverType == SERVER_TYPES["DatabaseServer"]:
-            from cloudbox.database.server.run import shutdown as dbShutdown
-            dbShutdown(self)
         elif self.serverType == SERVER_TYPES["WorldServer"]:
             from cloudbox.world.run import shutdown as worldShutdown
             worldShutdown(self)
+        elif self.serverType == SERVER_TYPES["WebServer"]:
+            from cloudbox.web.run import shutdown as webShutdown
+            webShutdown(self)

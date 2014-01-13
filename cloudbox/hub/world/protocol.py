@@ -19,6 +19,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
 
     def __init__(self):
         self.wsID = None
+        self.logger = logging.getLogger("cloudbox.hub.world.protocol._default") # Will be replaced when we get a proper ID
 
     def getServerType(self):
         return self.factory.getServerType()
