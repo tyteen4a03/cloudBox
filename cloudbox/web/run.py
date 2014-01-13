@@ -4,7 +4,6 @@
 # cloudBox Package.
 
 from tornado.httpserver import HTTPServer
-from tornado.ioloop import IOLoop
 from tornado.platform.twisted import TwistedIOLoop
 from twisted.internet import reactor
 
@@ -14,9 +13,14 @@ from cloudbox.web.application import WebServerApplication
 def init(serv):
     TwistedIOLoop().install()
 
-    serv.factories["WebServerApplicationHTTPServer"] = WebServerApplication(serv)
-    serv.factories["WebHTTPServer"] = HTTPServer(serv.factories["WebServerApplicationHTTPServer"])
-    serv.factories["WebHTTPServer"].listen(serv.settings["web"]["port"])
-    IOLoop.instance().run()
+    serv.loadConfig(populate=False)
+    serv.factories["WebServerApplication"] = WebServerApplication(serv)
+    serv.populateConfig()
+    serv.factories["WebHTTPServer"] = HTTPServer(serv.factories["WebServerApplication"])
+    serv.factories["WebHTTPServer"].listen(serv.settings["web"]["main"]["port"])
 
     reactor.run()
+
+
+def shutdown(serv):
+    pass

@@ -8,6 +8,7 @@ from tornado import web
 
 from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxFactoryMixin
+from cloudbox.web.webhandlers import index
 
 
 class WebServerApplication(web.Application, CloudBoxFactoryMixin):
@@ -17,10 +18,13 @@ class WebServerApplication(web.Application, CloudBoxFactoryMixin):
 
     def __init__(self, parentService):
         self.parentService = parentService
-        self.handlers = []
+        self.settings = None
+        self.handlers = [
+            (r"/", index.IndexRequestHandler)
+        ]
         self.logger = Logger()
         self.templateEnvironment = Environment(loader=FileSystemLoader("./templates"))
-        web.Application.__init__(self, self.handlers, self.parentService.settings["web"]["web-server-settings"])
+        web.Application.__init__(self, self.handlers, **self.parentService.settings["web"]["web-server-settings"])
 
     def log_request(self, handler):
         if handler.get_status() < 400:

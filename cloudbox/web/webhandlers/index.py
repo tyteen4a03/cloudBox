@@ -3,10 +3,11 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from tornado.web import RequestHandler
+from cloudbox.web.webhandlers.base import BaseRequestHandler
 
 
-class BaseRequestHandler(RequestHandler):
-    @property
-    def db(self):
-        return self.application.parentService.db
+class IndexRequestHandler(BaseRequestHandler):
+    def get(self, *args, **kwargs):
+        self.write("Hello Worlds!")
+
+    post = get
