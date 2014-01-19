@@ -11,8 +11,8 @@ from zope.interface import implements
 
 from cloudbox.common.constants.world import *
 from cloudbox.common.exceptions import makeFailure
+from cloudbox.world.exceptions import WorldLoadError
 from cloudbox.world.interfaces import IWorldFormat
-from cloudbox.world.worlds.classic import ClassicWorld
 
 
 class ClassicWorldWorldFormat(object):
@@ -38,12 +38,12 @@ class ClassicWorldWorldFormat(object):
             _nbtFile = fo.read()
         nbtObject = nbt.NBTFile(cStringIO.StringIO(_nbtFile))
         if nbtObject.name != "ClassicWorld":
-            return makeFailure(ERROR_HEADER_MISMATCH, "Header mismatch. Maybe the file is broken?")
+            raise WorldLoadError(ERROR_HEADER_MISMATCH, "Header mismatch. Maybe the file is broken?")
         if nbtObject["FormatVersion"] not in ClassicWorldWorldFormat.ACCEPTABLE_LEVEL_VERSIONS:
-            return makeFailure(ERROR_UNSUPPORTED_LEVEL_VERSION, "Level version unsupported.")
+            raise WorldLoadError(ERROR_UNSUPPORTED_LEVEL_VERSION, "Level version unsupported.")
         for r in ClassicWorldWorldFormat.requiredFields:
             if not nbtObject[r]:
-                return makeFailure(ERROR_REQUIRED_FIELDS_MISSING, "Required field {} missing.".format(r))
+                raise WorldLoadError(ERROR_REQUIRED_FIELDS_MISSING, "Required field {} missing.".format(r))
             returnDict[r] = nbtObject[r]
         for r in ClassicWorldWorldFormat.optionalFields:
             if nbtObject[r]:

@@ -14,18 +14,20 @@ class CloudBoxFactoryMixin(object):
 
     parentService = None
 
-    def getServerName(self):
-        return self.settings["main"]["server-name"]
+    @property
+    def serverName(self):
+        return self.parentService.settings["common"]["main"]["server-name"]
 
-    def getServerType(self):
-        return self.parentService.getServerType()
-
-    def getFactory(self, factoryName):
-        return self.parentService.factories[factoryName]
+    @property
+    def serverType(self):
+        return self.parentService.serverType
 
     @property
     def db(self):
         return self.parentService.db
+
+    def getFactory(self, factoryName):
+        return self.parentService.factories[factoryName]
 
 
 class CloudBoxProtocolMixin(object):
@@ -33,11 +35,17 @@ class CloudBoxProtocolMixin(object):
     A mixin class, providing common functions any cloudBox protocols can expect.
     """
 
-    def getServerName(self):
-        return self.factory.getServerName()
+    @property
+    def serverName(self):
+        return self.factory.serverName
 
-    def getServerType(self):
-        return self.factory.getServerType()
+    @property
+    def serverType(self):
+        return self.factory.serverType
+
+    @property
+    def db(self):
+        return self.factory.db
 
     def sendPacket(self, packetID, packetData={}):
         self.transport.write(self.gpp.packPacket(packetID, packetData))
@@ -53,7 +61,3 @@ class CloudBoxProtocolMixin(object):
 
     def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, message=""):
         self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "message": message})
-
-    @property
-    def db(self):
-        return self.factory.parentService.db

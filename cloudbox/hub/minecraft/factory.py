@@ -30,12 +30,6 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
     def startFactory(self):
         self.handlers = self.buildHandlers()
 
-    def getWSFactoryInstance(self):
-        return self.parentService.factories["WorldServerCommServerFactory"]
-
-    def getDBClientInstance(self):
-        return self.parentService.factories["DatabaseClientFactor"].instance
-
     def buildHandlers(self):
         handlers = {
             TYPE_INITIAL: classic.HandshakePacketHandler,

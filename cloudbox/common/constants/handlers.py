@@ -16,10 +16,6 @@ TYPE_STATEID_ALLOCATION = 0x30
 TYPE_STATE_UPDATE = 0x31
 TYPE_LOAD_WORLD = 0x32
 
-TYPE_FETCH_DATA = 0x50
-TYPE_DIRECT_QUERY = 0x51  # Use FetchData whenever possible. Should only be used for complex queries and/or testing only.
-TYPE_QUERY_RESULT = 0x52
-
 TYPE_ERROR = 0xFE
 TYPE_DISCONNECT = 0xFF
 
@@ -48,12 +44,6 @@ HANDLERS_WORLD_SERVER = {
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }
 
-HANDLERS_DATABASE_SERVER = {
-    #TYPE_FETCH_DATA: ("cloudbox.database.handlers", "FetchDataPacketHandler"), # Not until peewee-twisted is ready
-    TYPE_DIRECT_QUERY: ("cloudbox.database.handlers", "DirectQueryPacketHandler"),
-    TYPE_QUERY_RESULT: ("cloudbox.database.handlers", "QueryResultPacketHandler"),
-}
-
 # Future consideration: Unused for now
 
 #from collections import namedtuple
@@ -73,8 +63,5 @@ PACKET_DEFS[TYPE_HANDSHAKE] = namedtuple("HandshakePacket", ["serverName", "serv
 PACKET_DEFS[TYPE_STATEID_ALLOCATION] = namedtuple("StateIDAllocationPacket", ["requestID", ""])
 PACKET_DEFS[TYPE_STATE_UPDATE] = namedtuple("StateUpdatePacket", ["playerID", "updates"])
 PACKET_DEFS[TYPE_LOAD_WORLD] = namedtuple("LoadWorldPacket", [])
-PACKET_DEFS[TYPE_FETCH_DATA] = namedtuple("FetchDataPacket", [])
-PACKET_DEFS[TYPE_DIRECT_QUERY] = namedtuple("DirectQueryPacket", [])
-PACKET_DEFS[TYPE_QUERY_RESULT] = namedtuple("QueryResultPacket", [])
 PACKET_DEFS[TYPE_ERROR] = namedtuple("ErrorPacket", [])
 PACKET_DEFS[TYPE_DISCONNECT] = namedtuple("DisconnectPacket", [])

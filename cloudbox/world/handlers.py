@@ -13,9 +13,9 @@ class WorldHandshakePacketHandler(HandshakePacketHandler):
     @classmethod
     def handleData(cls, data):
         super(WorldHandshakePacketHandler, cls).handleData(data)
-        if data["packetData"][1] == common.SERVER_TYPES["WorldServer"]:
-            return
-
+        if data["packetData"][1] == common.SERVER_TYPES["HubServer"]:
+            # OK, connection established
+            data["parent"].logger.info("Connection with HubServer established.")
 
 
 class StateUpdatePacketHandler(BasePacketHandler):

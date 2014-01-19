@@ -1,8 +1,16 @@
 cfgversion:
   version: 1.0.0
-main:
-log:
-  enable-debug: false
+db:
+    driver: sqlite3 # A valid python DBAPI package.
+    port: 5998
+    driver-config: # Driver-specific configuration - use one only!
+        # MySQL/PostgreSQL
+        server-ip: 127.0.0.1
+        username: root
+        password: things
+        database: cloudbox
+        # SQLite
+        file: data/db/cloudbox.db
 advanced:
   requests-per-tick:
     dbclient-incoming: 500

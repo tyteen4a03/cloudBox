@@ -61,12 +61,11 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
         self.logger.critical("Connection to HubServer failed: %s" % reason)
         connector.connect()
 
-    def loadWorld(self, worldId=None):
+    def loadWorld(self, worldId):
         """
         Load the world given the ID.
-        If no ID is given, automatically generate one.
         """
-        pass
+        
 
     def _loadWorld(self, filepath):
         pass
@@ -100,7 +99,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
 
     def addWorld(self, worldName, filepath):
         """Adds the world to the database."""
-        self.dbConnector.sendInsert()
+        self.db.runQuery()
 
     def deleteWorld(self, worldID):
-        self.dbConnector.sendDelete(worldID)
+        self.db.runQuery()

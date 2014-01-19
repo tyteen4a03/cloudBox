@@ -12,6 +12,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+from twisted.enterprise.adbapi import ConnectionPool
+from twisted.python.failure import Failure
+
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.constants.common import *
 
@@ -26,6 +29,7 @@ class CloudBoxService(object):
         Initializes the service.
         Whoami contains the server identifier.
         """
+        self.logger = logging.getLogger("cloudbox")
         self.serverType = SERVER_TYPES[whoami]
         # Make our loop registry
         self.loops = LoopRegistry()
@@ -43,7 +47,7 @@ class CloudBoxService(object):
         """
         with open("config/common.yaml", "r") as f:
             s = f.read()
-            self.settings["common"] = yaml.load(s, Loader)
+        self.settings["common"] = yaml.load(s, Loader)
         if self.serverType == SERVER_TYPES["HubServer"]:
             with open("config/hub.yaml", "r") as f:
                 s = f.read()
@@ -67,6 +71,44 @@ class CloudBoxService(object):
             self.factories["WorldServerFactory"].settings = self.settings["world"]
         elif self.serverType == SERVER_TYPES["WebServer"]:
             self.factories["WebServerApplication"].settings = self.settings["web"]
+
+    def loadDatabase(self):
+        """
+        Connects to the database.
+        """
+        connArgs = []
+        connKwargs = dict()
+        try:
+            __import__(("%s" % self.settings["common"]["db"]["driver"]))
+        except ImportError:
+            self.logger.critical("Database module {dbModule} not found, stopping.".format(dbModule=self.settings["common"]["db"]["driver"]))
+            self.stop()
+        if self.settings["common"]["db"]["driver"] == "sqlite3":
+            connKwargs["database"] = self.settings["common"]["db"]["driver-config"]["file"]
+        # TODO Implement
+        elif self.settings["common"]["db"]["driver"] == "txmysql":
+            connKwargs = {}
+        elif self.settings["common"]["db"]["driver"] == "txpostgres":
+            connKwargs = {}
+        elif self.settings["common"]["db"]["driver"] == "mysql-python":
+            connKwargs = {}
+        elif self.settings["common"]["db"]["driver"] == "psycopg2":
+            connKwargs = {}
+        self.db = ConnectionPool(self.settings["common"]["db"]["driver"], *connArgs, **connKwargs)
+        # Perform basic validation check
+        self.db.runQuery('SELECT value FROM cb_global_metadata WHERE name="databaseVersion"').addBoth(self.checkTablesCallabck)
+
+    def checkTablesCallabck(self, res):
+        if isinstance(res, Failure):
+            self.logger.critical("Database validation check failed: Error occured.")
+            self.logger.critical(res.getTraceback())
+            self.stop()
+        elif int(res[0][0]) != VERSION_NUMBER:
+            self.logger.critical("Database validation check failed: Database version and software version mismatch.")
+            self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0][0]))
+            self.stop()
+        else:
+            self.logger.info("Database API ready.")
 
     def start(self):
         """

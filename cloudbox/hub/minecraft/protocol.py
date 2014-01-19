@@ -11,9 +11,9 @@ from twisted.internet.protocol import Protocol, connectionDone as _connDone
 from cloudbox.common.constants.classic import *
 from cloudbox.common.gpp import MinecraftClassicPacketProcessor
 from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.mixins import CloudBoxProtocolMixin
 
-
-class MinecraftHubServerProtocol(Protocol):
+class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
     """
     Main protocol class for communicating with clients.
     """
@@ -136,26 +136,24 @@ class MinecraftHubServerProtocol(Protocol):
             self.sendServerMessage("World loading failed - {}".format(str(err)))
         # Cancel any stuff if needed to
 
-
-    def joinDefaultWorld(self, proto):
+    def joinDefaultWorld(self):
         """
         Joins the default world.
         """
-        mode = self.settings["main"]["entry-mode"]
+        mode = self.factory.settings["main"]["entry-mode"]
         if mode == "solo":
             # Find out which WS has the default world and join it
             def afterGetDefaultWorld(res):
                 row = res.fetch_row()
+                wsf = self.factory.getFactory("WorldServerCommServerFactory")
                 # Get world server link
-                wsProto = self.getWSFactoryInstance().clients[row[3]]
+                if row[3] not in wsf:
+                    # WorldServer down, raise hell
+                    raise
                 # Send the player over
-                wsProto.protoDoJoinServer(proto, world=row[3])
-            self.getDBClientInstance().requests.add({
-                    "query": "SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1",
-                    "args": [],
-                    "cb": afterGetDefaultWorld,
-                    "eb": self._joinWorldFailedErrback
-            })
+                wsProto.protoDoJoinServer(world=row[3])
+            self.db.runQuery("SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1")\
+                .addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
         elif mode == "distributed":
             # Find out which WS has the default world and join any of them.
             self.otherThings()

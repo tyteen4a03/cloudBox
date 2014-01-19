@@ -26,11 +26,10 @@ class BaseGeneralPacketProcessor(object):
         self.handlers = handlers
         self.handlersClassRefs = {}
         self.logger = logging.getLogger("cloudbox.gpp.{}".format(self.name))
-        self.baseVariables = {}
         if serverType:
             self.serverType = serverType
         else:
-            self.serverType = self.parent.getServerType()
+            self.serverType = self.parent.serverType
         self.baseVariables = {
             "serverType": self.serverType,
             "parent": self.parent,
@@ -50,7 +49,7 @@ class BaseGeneralPacketProcessor(object):
         """
         Merges theDict with the base dictionary.
         """
-        return dict(**self.baseVariables, **theDict)  # Because I'm lazy
+        return dict(self.baseVariables, **theDict)  # Because I'm lazy
 
 
 class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
@@ -97,7 +96,7 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
     def packPacket(self, packetID, packetData, callback=None):
         if packetID not in self.handlersClassRefs.keys():
             self.initHandlerClass(packetID)
-        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables, callback=callback))
+        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables), callback=callback)
 
     def initHandlerClass(self, handlerID):
         # Grab the class

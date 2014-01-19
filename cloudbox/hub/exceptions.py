@@ -6,5 +6,5 @@
 from cloudbox.common.exceptions import ErrorCodeException
 
 
-class WorldLoadError(ErrorCodeException):
+class WorldServerLinkException(_errorCodeException):
     pass

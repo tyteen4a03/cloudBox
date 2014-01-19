@@ -47,8 +47,8 @@ class HandshakePacketHandler(BasePacketHandler):
     def packData(cls, data):
         return data["packer"].pack([
             handlers.TYPE_HANDSHAKE,
-            data["parent"].getServerName(),
-            data["parent"].getServerType()
+            data["parent"].serverName,
+            data["parent"].serverType
         ])
 
 

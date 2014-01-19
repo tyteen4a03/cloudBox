@@ -4,9 +4,8 @@
 # cloudBox Package.
 
 from twisted.internet import reactor
-from twisted.internet.endpoints import TCP4ServerEndpoint, TCP4ClientEndpoint
+from twisted.internet.endpoints import TCP4ServerEndpoint
 
-from cloudbox.database.client.factory import DatabaseClientFactory
 from cloudbox.hub.heartbeat import HeartbeatService
 from cloudbox.hub.minecraft.factory import MinecraftHubServerFactory
 from cloudbox.hub.world.factory import WorldServerCommServerFactory
@@ -17,11 +16,12 @@ def init(serv):
     serv.factories["MinecraftHubServerFactory"] = MinecraftHubServerFactory(serv)
     # WorldServer part of the Hub
     serv.factories["WorldServerCommServerFactory"] = WorldServerCommServerFactory(serv)
-    # DatabaseClient part of the Hub
-    serv.factories["DatabaseClientFactory"] = DatabaseClientFactory(serv)
 
     # Populate configuration.
     serv.loadConfig()
+
+    # Load up the database.
+    serv.loadDatabase()
 
     # Start up everything.
     TCP4ServerEndpoint(reactor, serv.settings["hub"]["main"]["ports"]["clients"])\
@@ -32,10 +32,10 @@ def init(serv):
     # Heartbeat Service
     if serv.settings["hub"]["heartbeat"]["send-heartbeat"]:
         if serv.settings["hub"]["heartbeat"]["minecraft-heartbeat"]:
-            serv.factories["HeartbeatService-Minecraft"] = HeartbeatService(serv,
+            serv.factories["HeartbeatService-Minecraft"] = HeartbeatService(serv, "Minecraft",
                 "http://minecraft.net/heartbeat.jsp").start()
         if serv.settings["hub"]["heartbeat"]["classicube-heartbeat"]:
-            serv.factories["HeartbeatService-ClassiCube"] = HeartbeatService(serv,
+            serv.factories["HeartbeatService-ClassiCube"] = HeartbeatService(serv, "ClassiCube",
                 "http://www.classicube.net/server/heartbeat").start()
 
     reactor.run()

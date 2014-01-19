@@ -79,8 +79,8 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
         # All check complete. Request World Server to prepare level
         data["parent"].identified = True
-        data["parent"].factory.clients[data["parent"].id]["username"] = data["parent"].username
-        data["parent"].factory.joinDefaultWorld(data["parent"])
+        data["parent"].factory.clients[data["parent"].sessionID]["username"] = data["parent"].username
+        data["parent"].joinDefaultWorld()
 
         # Announce our presence
         data["parent"].factory.logger.info("Connected, as '%s'" % data["parent"].username)

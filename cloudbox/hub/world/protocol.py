@@ -3,6 +3,8 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import logging
+
 from twisted.internet.protocol import Protocol
 
 from cloudbox.common.constants.common import *
@@ -20,9 +22,6 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
     def __init__(self):
         self.wsID = None
         self.logger = logging.getLogger("cloudbox.hub.world.protocol._default") # Will be replaced when we get a proper ID
-
-    def getServerType(self):
-        return self.factory.getServerType()
 
     def connectionMade(self):
         """
