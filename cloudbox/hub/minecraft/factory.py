@@ -73,13 +73,16 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
 
     def getWorldServersAvailability(self):
         statDict = {}
-        for ws in self.wsFactory.worldServers:
+        for ws in self.getFactory("WorldServerCommServerFactory").worldServers:
             statDict[ws.id] = self.getWorldServerAvailability(ws.id)
 
     def getWorldServerAvailability(self, wsID):
-        return self.wsFactory.worldServers[wsID].getStats()
+        return self.getFactory("WorldServerCommServerFactory").worldServers[wsID].getStats()
 
     def relayMCPacketToWorldServer(self, packetID, packetData):
+        pass
+
+    def assignWorldServer(self, proto):
         pass
 
     def buildUsernameList(self, wsID=None):

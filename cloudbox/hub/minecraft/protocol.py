@@ -9,9 +9,12 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, connectionDone as _connDone
 
 from cloudbox.common.constants.classic import *
+from cloudbox.common.constants.common import *
 from cloudbox.common.gpp import MinecraftClassicPacketProcessor
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.hub.exceptions import WorldServerLinkException
+
 
 class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
     """
@@ -67,11 +70,8 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         self.transport.write(msg)
 
-    def sendPacket(self, packetId, packetData):
-        # TODO Rewrite to use GPP
-        finalPacket = self.factory.handlers[packetId].packData(packetData)
-        self.transport.write(chr(packetId) + finalPacket)
-        self.logger.debug(finalPacket)
+    def sendPacket(self, packetID, packetData):
+        self.transport.write(self.gpp.packPacket(packetID, packetData))
 
     def sendError(self, error, disconnectNow=False):
         """
@@ -100,7 +100,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         Shortcut for sending a server-like messgae to the client (yellow messgaes)
         """
-        self.sendChanneledMessage("&e" + message, channel=None)
+        self.sendChanneledMessage(COLOUR_YELLOW + message, channel=None)
 
     def sendKeepAlive(self):
         """
@@ -147,25 +147,25 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
                 row = res.fetch_row()
                 wsf = self.factory.getFactory("WorldServerCommServerFactory")
                 # Get world server link
-                if row[3] not in wsf:
+                if row[3] not in wsf.worldServers:
                     # WorldServer down, raise hell
-                    raise
+                    raise WorldServerLinkException
                 # Send the player over
-                wsProto.protoDoJoinServer(world=row[3])
+                wsf.worldServers[row[3]].protoDoJoinServer(world=row[3])
             self.db.runQuery("SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1")\
                 .addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
         elif mode == "distributed":
             # Find out which WS has the default world and join any of them.
             self.otherThings()
 
-    def joinWorldServer(self, proto, wsID):
+    def joinWorldServer(self, wsID):
         """
         Joins a World Server given its ID.
         """
         pass
 
-    def leaveWorldServer(self, proto, wsID):
+    def leaveWorldServer(self, wsID):
         """
         Leaves the current worldServer.
         """
-        self.getWSFactoryInstance().leaveWorldServer(proto, wsID)
+        self.getFactory("WorldServerCommServerFactory").leaveWorldServer(self, wsID)

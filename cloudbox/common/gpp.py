@@ -21,20 +21,15 @@ class BaseGeneralPacketProcessor(object):
 
     name = None
 
-    def __init__(self, parent, handlers, serverType=None):
+    def __init__(self, parent, handlers):
         self.parent = parent
         self.handlers = handlers
-        self.handlersClassRefs = {}
+        self.handlerInstances = {}
         self.logger = logging.getLogger("cloudbox.gpp.{}".format(self.name))
-        if serverType:
-            self.serverType = serverType
-        else:
-            self.serverType = self.parent.serverType
-        self.baseVariables = {
-            "serverType": self.serverType,
-            "parent": self.parent,
-            "logger": self.logger
-        }
+
+    @property
+    def serverType(self):
+        return self.parent.serverType
 
     def feed(self, data):
         pass
@@ -44,12 +39,6 @@ class BaseGeneralPacketProcessor(object):
 
     def packPacket(self, packetID, packetData):
         pass
-
-    def _mergeWithBaseDictionary(self, theDict):
-        """
-        Merges theDict with the base dictionary.
-        """
-        return dict(self.baseVariables, **theDict)  # Because I'm lazy
 
 
 class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
@@ -66,8 +55,6 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
         super(MSGPackPacketProcessor, self).__init__(parent, handlers)
-        self.baseVariables["packer"] = self.packer
-        self.baseVariables["unpacker"] = self.unpacker
         self.requests = {}  # Request ID: callback
 
     def feed(self, data):
@@ -81,35 +68,34 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         data = self.unpacker.unpack()
         if not data:
             return  # Try again later
-        self.logger.info(str(data))
         # Read the handler
         handler = data[0]
         if handler not in self.handlers.keys():
             # TODO Client identifier
             self.logger.error("Client sent unparsable data (%s, %s)", (handler, data[1:].join(" ")))
-        # TODO Factorize?
-        if handler not in self.handlersClassRefs.keys():
+        if handler not in self.handlerInstances.keys():
             self.initHandlerClass(handler)
         # Pass it on to the handler to handle this request
-        self.handlersClassRefs[handler].handleData(self._mergeWithBaseDictionary({"packetData": data[1:]}))
+        self.handlerInstances[handler].handleData(data[1:])
 
     def packPacket(self, packetID, packetData, callback=None):
-        if packetID not in self.handlersClassRefs.keys():
+        if packetID not in self.handlerInstances.keys():
             self.initHandlerClass(packetID)
-        return self.handlersClassRefs[packetID].packData(dict(packetData, **self.baseVariables), callback=callback)
+        return self.handlerInstances[packetID].packData(packetData, callback=callback)
 
     def initHandlerClass(self, handlerID):
         # Grab the class
         handlerEntry = self.handlers[handlerID]
-        cls = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])
-        self.handlersClassRefs[handlerID] = cls
+        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger)
+        self.handlerInstances[handlerID].packer = self.packer
+        self.handlerInstances[handlerID].unpacker = self.unpacker
 
 
 class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
     """
     A General Packet Processor for Minecraft packets.
     """
-    name = "minecraft"
+    name = "minecraftClassic"
 
     def __init__(self, parent, handlers):
         super(MinecraftClassicPacketProcessor, self).__init__(parent, handlers)
@@ -122,9 +108,9 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
 
     def parseFirstPacket(self):
         # Examine the first byte, to see what the command is
-        packetType = ord(self.buffer[0])
+        packetID = ord(self.buffer[0])
         try:
-            packetFormat = self.handlers[packetType]
+            packetFormat = self.handlers[packetID]
         except KeyError:
             # Out of range - unknown packet.
             return
@@ -137,4 +123,18 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
         packetData = list(packetFormat.unpackData(self.buffer[1:]))
         self.buffer = self.buffer[expectedLength + 1:]
         # Pass it on to the handler to handle this request
-        self.handlers[packetType].handleData(self._mergeWithBaseDictionary({"packetData": packetData}))
+        if packetID not in self.handlerInstances.keys():
+            self.initHandlerClass(packetID)
+        self.handlers[packetID].handleData(packetData)
+
+    def packPacket(self, packetID, packetData, withoutHeader=False):
+        if packetID not in self.handlerInstances.keys():
+            self.initHandlerClass(packetID)
+        header = "" if withoutHeader else chr(packetID)
+        packed = self.handlers[packetID].packData(packetData)
+        return header + packed
+
+    def initHandlerClass(self, handlerID):
+        # Grab the class
+        handlerEntry = self.handlers[handlerID]
+        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger)

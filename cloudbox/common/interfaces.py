@@ -12,12 +12,12 @@ class IPacketHandler(Interface):
     """
     packetID = Attribute("The packetID this PacketHandler handles.")
 
-    def handleData(data):
+    def handleData(packetData):
         """
         Acts upon data.
         """
 
-    def packData(data):
+    def packData(packetData):
         """
         Packs the data to the desired wire-transfer format.
         """
@@ -28,7 +28,7 @@ class IMinecraftPacketHandler(IPacketHandler):
     Interface for PacketHandlers for Minecraft packets.
     """
 
-    def unpackData(data):
+    def unpackData(packetData):
         """
         Unpacks the data.
         """

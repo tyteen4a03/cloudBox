@@ -11,6 +11,7 @@
 
 TYPE_KEEPALIVE = 0x00
 TYPE_HANDSHAKE = 0x01
+TYPE_GET_STATUS = 0x02
 
 TYPE_STATEID_ALLOCATION = 0x30
 TYPE_STATE_UPDATE = 0x31
@@ -25,7 +26,6 @@ TYPE_DISCONNECT = 0xFF
 HANDLERS_CLIENT_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
-    #0x02: "cloudbox.common.handlers", # Placeholder for encryption, unused for now
     TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
@@ -34,7 +34,6 @@ HANDLERS_CLIENT_BASIC = {
 HANDLERS_SERVER_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
-    #0x02: ["handshakeEncrypt", "cloudbox.common.handlers"], # Placeholder for encryption, unused for now
     TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }

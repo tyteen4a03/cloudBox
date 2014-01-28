@@ -5,6 +5,7 @@
 
 from zope.interface import Attribute, Interface
 
+
 class IPlugin(Interface):
     """
     An interface to all plugins.
@@ -12,6 +13,7 @@ class IPlugin(Interface):
 
     name = Attribute("""Name of the plugin""")
     version = Attribute("""Version of the plugin""")
+
 
 class ICommand(Interface):
     """

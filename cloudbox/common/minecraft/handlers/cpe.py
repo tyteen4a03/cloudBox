@@ -3,6 +3,7 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+from cloudbox.common.constants.cpe import *
 from cloudbox.common.minecraft.handlers.classic import BaseMinecraftPacketHandler
 
 
@@ -11,12 +12,12 @@ class ExtInfoPacketHandler(BaseMinecraftPacketHandler):
     A Handler class for handling extension information.
     """
 
-    @classmethod
-    def handleData(cls, data):
+    packetID = TYPE_EXTINFO
+
+    def handleData(self, packetData):
         pass
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 class ExtEntryPacketHandler(BaseMinecraftPacketHandler):
@@ -24,10 +25,10 @@ class ExtEntryPacketHandler(BaseMinecraftPacketHandler):
     A Handler class for handling extension entries.
     """
 
-    @classmethod
-    def handleData(cls, data):
+    packetID = TYPE_EXTENTRY
+
+    def handleData(self, packetData):
         pass
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass

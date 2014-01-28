@@ -7,7 +7,6 @@ from msgpack import Packer
 from twisted.internet.protocol import Protocol
 
 from cloudbox.common.gpp import MSGPackPacketProcessor
-from cloudbox.common.logger import Logger
 from cloudbox.common.mixins import CloudBoxProtocolMixin
 
 

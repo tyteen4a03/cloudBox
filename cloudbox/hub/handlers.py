@@ -8,13 +8,9 @@ from cloudbox.common.handlers import HandshakePacketHandler
 
 
 class HubHandshakePacketHandler(HandshakePacketHandler):
-    @classmethod
-    def handleData(cls, data):
-        super(HubHandshakePacketHandler, cls).handleData(data)
-        if data["packetData"][1] == common.SERVER_TYPES["WorldServer"]:
-            return
-        elif data["packetData"][1] == common.SERVER_TYPES["DatabaseServer"]:
-            dbClientFactory = data["parent"].getFactory("DatabaseClientFactory")
-            if dbClientFactory.sentHandshake:
-                dbClientFactory.ready = True
-                data["parent"].parentService.loops.registerLoop("dbClientFactory.processRequests", dbClientFactory.processRequests).start(0.01)
+    def handleData(self, packetData):
+        super(HubHandshakePacketHandler, self).handleData(packetData)
+        if packetData[1] == common.SERVER_TYPES["WorldServer"]:
+            # See if they are on our allowed list
+            if self.parent.transport.getPeer().host not in self.parent.factory.settings["main"]["allowed-ips"]:
+                self.parent.sendError()

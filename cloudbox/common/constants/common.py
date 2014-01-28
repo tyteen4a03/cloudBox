@@ -28,12 +28,20 @@ ERRORS = {
     # The very very generic errors
     "unknown": 0,
     "ioerror": 1,
+    "connection_lost": 2,
+    # Generic server link
+    "connection_refused": 10,
     # GPP
-    "not_enough_data": 10,
-    "handler_not_found": 11,
-    "corrupt_data": 12,
+    "not_enough_data": 20,
+    "handler_not_found": 21,
+    "corrupt_data": 22,
+    # World loader
+    "header_mismatch": 30,
+    "unsupported_level_version": 31,
+    "required_fields_missing": 32,
     # Hub <-> World methods error
-    "world_file_not_found": 200
+    "worldserver_link_not_established": 200,
+    "world_file_not_found": 201
 }
 
 ERRORS_INV = dict((v, k) for k, v in ERRORS.iteritems())

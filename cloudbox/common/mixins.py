@@ -53,11 +53,11 @@ class CloudBoxProtocolMixin(object):
     def sendHandshake(self):
         self.sendPacket(TYPE_HANDSHAKE)
 
-    def sendError(self, error):
-        self.sendDisconnect(DISCONNECT_ERROR, error)
+    def sendError(self, error, errorID=ERRORS["unknown"]):
+        self.sendDisconnect(DISCONNECT_ERROR, errorID, error)
 
     def sendServerShutdown(self, reason=""):
         self.sendDisconnect(DISCONNECT_SHUTDOWN, reason)
 
-    def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, message=""):
-        self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "message": message})
+    def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, errorID=ERRORS["unknown"], message=""):
+        self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "errorID": errorID, "message": message})

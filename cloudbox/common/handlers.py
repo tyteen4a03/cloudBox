@@ -15,14 +15,17 @@ class BasePacketHandler(object):
     """
     implements(IPacketHandler)
 
+    def __init__(self, parent, logger):
+        self.parent = parent
+        self.logger = logger
+
 
 class KeepAlivePacketHandler(BasePacketHandler):
     """
     A Handler class for keep-alive.
     """
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         return "\x91\x00"  # This is static so might as well pre-pack it :D
 
 
@@ -31,24 +34,22 @@ class HandshakePacketHandler(BasePacketHandler):
     A Handler class for packet HandshakeRequest.
     """
 
-    @classmethod
-    def handleData(cls, data):
+    def handleData(self, packetData):
         # See if they are in our allowed list
-        if not data["parent"].transport.getPeer().host in data["parent"].factory.settings["main"]["allowed-ips"]:
+        if not self.parent.transport.getPeer().host in self.parent.factory.settings["main"]["allowed-ips"]:
             # Refuse connection
-            data["parent"].sendError("You are not connecting from an authorized IP.")
-            data["parent"].transport.loseConnection()
-        if data["packetData"][1] not in common.SERVER_TYPES:
+            self.parent.sendError("You are not connecting from an authorized IP.")
+            self.parent.transport.loseConnection()
+        if packetData[1] not in common.SERVER_TYPES:
             # Who are you?
-            data["parent"].sendError("Server type undefined.")
-            data["parent"].transport.loseConnection()
+            self.parent.sendError("Server type undefined.")
+            self.parent.transport.loseConnection()
 
-    @classmethod
-    def packData(cls, data):
-        return data["packer"].pack([
+    def packData(self, packetData):
+        return self.packer.pack([
             handlers.TYPE_HANDSHAKE,
-            data["parent"].serverName,
-            data["parent"].serverType
+            self.parent.serverName,
+            self.parent.serverType
         ])
 
 
@@ -57,27 +58,27 @@ class DisconnectPacketHandler(BasePacketHandler):
     A Handler class for Server Shutdown.
     """
 
-    @classmethod
-    def handleData(cls, data):
-        data["logger"].info("{} closed connection, reason: {}".format(
-            common.SERVER_TYPES_INV[data["packetData"][0]], data["packetData"][2]))
-        if data["parent"].remoteServerType == common.SERVER_TYPES["HubServer"]:
+    def handleData(self, packetData):
+        # TODO ErrorID
+        self.logger.info("{} closed connection, reason: {}".format(
+            common.SERVER_TYPES_INV[packetData[0]], packetData[3]))
+        if self.parent.remoteServerType == common.SERVER_TYPES["HubServer"]:
             # Hub Server is closing our connection, why oh why
-            if data["serverType"] == common.SERVER_TYPES["WorldServer"]:
-                data["parent"].factory.saveAllWorlds()
-                data["parent"].factory.closeAllWorlds()
-            elif data["serverType"] == common.SERVER_TYPES["DatabaseServer"]:
+            if self.parent.serverType == common.SERVER_TYPES["WorldServer"]:
+                self.parent.factory.saveAllWorlds()
+                self.parent.factory.closeAllWorlds()
+            elif self.parent.serverType == common.SERVER_TYPES["DatabaseServer"]:
                 return
-        elif data["parent"].remoteServerType == common.SERVER_TYPES["WorldServer"]:
+        elif self.parent.remoteServerType == common.SERVER_TYPES["WorldServer"]:
             # World Server is closing our connection, probably shutting down
-            data["parent"].available = False
-        data["parent"].transport.loseConnection()
+            self.parent.available = False
+        self.parent.transport.loseConnection()
 
-    @classmethod
-    def packData(cls, data):
-        return data["packer"].pack([
+    def packData(self, packetData):
+        return self.packer.pack([
             handlers.TYPE_DISCONNECT,
-            data["serverType"], # In case the handshake failed
-            data["disconnectType"],
-            data["message"]
+            self.parent.serverType, # In case the handshake failed
+            packetData["disconnectType"],
+            packetData["errorID"],
+            packetData["message"]
         ])

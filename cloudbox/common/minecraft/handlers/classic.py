@@ -21,13 +21,13 @@ class BaseMinecraftPacketHandler(BasePacketHandler):
     """
     implements(IMinecraftPacketHandler)
 
-    @classmethod
-    def unpackData(cls, data):
-        return TYPE_FORMATS[cls.packetID].decode(data)
+    packetID = None
 
-    @classmethod
-    def getExpectedLength(cls):
-        return len(TYPE_FORMATS[cls.packetID])
+    def unpackData(self, data):
+        return TYPE_FORMATS[self.packetID].decode(data)
+
+    def getExpectedLength(self):
+        return len(TYPE_FORMATS[self.packetID])
 
 
 class HandshakePacketHandler(BaseMinecraftPacketHandler):
@@ -36,78 +36,76 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_INITIAL
 
-    @classmethod
-    def handleData(cls, data):
+    def handleData(self, packetData):
         # Get the client's details
-        protocol, data["parent"].username, mppass, utype = data["packetData"]
-        if data["parent"].identified:
+        protocol, self.parent.username, mppass, utype = packetData
+        if self.parent.identified:
             # Sent two login packets - I wonder why?
-            data["parent"].factory.logger.info("Kicked '%s'; already logged in to server" % data["parent"].username)
-            data["parent"].sendError("You already logged in!")
+            self.parent.factory.logger.info("Kicked '%s'; already logged in to server" % self.parent.username)
+            self.parent.sendError("You already logged in!")
 
         # Right protocol?
         if protocol != 7:
-            data["parent"].sendError("Wrong protocol.")
+            self.parent.sendError("Wrong protocol.")
             return
 
         # Check their password
-        expectedPassword = hashlib.md5(data["parent"].factory.settings["main"]["salt"] +
-                                       data["parent"].username).hexdigest()[-32:].strip("0")
+        expectedPassword = hashlib.md5(self.parent.factory.settings["main"]["salt"] +
+                                       self.parent.username).hexdigest()[-32:].strip("0")
         mppass = mppass.strip("0")
         # TODO: Rework this - possibly limit to localhost only?
-        #if not data["parent"].transport.getHost().host.split(".")[0:2] == data["parent"].ip.split(".")[0:2]:
+        #if not self.parent.transport.getHost().host.split(".")[0:2] == self.parent.ip.split(".")[0:2]:
         if mppass != expectedPassword:
-            data["parent"].factory.logger.info(
-                "Kicked '%s'; invalid password (%s, %s)" % (data["parent"].username, mppass, expectedPassword))
-            data["parent"].sendError("Incorrect authentication, please try again.")
+            self.parent.factory.logger.info(
+                "Kicked '%s'; invalid password (%s, %s)" % (self.parent.username, mppass, expectedPassword))
+            self.parent.sendError("Incorrect authentication, please try again.")
             return
-        #value = data["parent"].factory.runHook("prePlayerConnect", {"client": self})
+        #value = self.parent.factory.runHook("prePlayerConnect", {"client": self})
 
         # Are they banned?
-        bans = data["parent"].factory.getBans(data["parent"].username, data["parent"].ip)
+        bans = self.parent.factory.getBans(self.parent.username, self.parent.ip)
         if bans:
-            data["parent"].sendError("You are banned: %s" % bans[-1]["reason"])
+            self.parent.sendError("You are banned: %s" % bans[-1]["reason"])
             return
 
         # OK, see if there's anyone else with that username
-        usernameList = data["parent"].factory.buildUsernameList()
-        if data["parent"].username.lower() in usernameList:
+        usernameList = self.parent.factory.buildUsernameList()
+        if self.parent.username.lower() in usernameList:
             # Kick the other guy out
-            data["parent"].factory.clients[usernameList[data["parent"].username.lower()].id]["protocol"].sendError(
+            self.parent.factory.clients[usernameList[self.parent.username.lower()].id]["protocol"].sendError(
                 "You logged in on another computer.", disconnectNow=True)
             return
 
         # All check complete. Request World Server to prepare level
-        data["parent"].identified = True
-        data["parent"].factory.clients[data["parent"].sessionID]["username"] = data["parent"].username
-        data["parent"].joinDefaultWorld()
+        self.parent.identified = True
+        self.parent.factory.clients[self.parent.sessionID]["username"] = self.parent.username
+        self.parent.factory.assignWorldServer(data["parent"])
+        self.parent.joinDefaultWorld()
 
         # Announce our presence
-        data["parent"].factory.logger.info("Connected, as '%s'" % data["parent"].username)
-        #for client in data["parent"].factory.usernames.values():
-        #    client.sendServerMessage("%s has come online." % data["parent"].username)
+        self.parent.factory.logger.info("Connected, as '%s'" % self.parent.username)
+        #for client in self.parent.factory.usernames.values():
+        #    client.sendServerMessage("%s has come online." % self.parent.username)
 
         # Send them back our info.
         # TODO: CPE
-        #if data["parent"].factory.settings["main"]["enable-cpe"]:
-        #    data["parent"].sendPacket(TYPE_EXTINFO, len(data["parent"].cpeExtensions)
+        #if self.parent.factory.settings["main"]["enable-cpe"]:
+        #    self.parent.sendPacket(TYPE_EXTINFO, len(self.parent.cpeExtensions)
 
-        data["parent"].sendPacket(TYPE_INITIAL, {
+        self.parent.sendPacket(TYPE_INITIAL, {
             "protocolVersion": 7, # Protocol version
-            "serverName": packString(data["parent"].factory.settings["main"]["name"]),
-            "serverMOTD": packString(data["parent"].factory.settings["main"]["motd"]),
+            "serverName": packString(self.parent.factory.settings["main"]["name"]),
+            "serverMOTD": packString(self.parent.factory.settings["main"]["motd"]),
             #"userPermission": 100 if (self.isOp() if hasattr(self, "world") else False) else 0, # TODO
             "userPermission": 0
         })
-        data["parent"].loops.registerLoop("keepAlive", LoopingCall(data["parent"].sendKeepAlive)).start(1)
-        #data["parent"].factory.runHook("onPlayerConnect", {"client": data["parent"]}) # Run the player connect hook
+        self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
 
-    @classmethod
-    def packData(cls, data):
-        return TYPE_FORMATS[TYPE_INITIAL].encode(data["protocolVersion"],
-                                                 data["serverName"],
-                                                 data["serverMOTD"],
-                                                 data["userPermission"])
+    def packData(self, packetData):
+        return TYPE_FORMATS[TYPE_INITIAL].encode(packetData["protocolVersion"],
+                                                 packetData["serverName"],
+                                                 packetData["serverMOTD"],
+                                                 packetData["userPermission"])
 
 
 class KeepAlivePacketHandler(BaseMinecraftPacketHandler):
@@ -116,8 +114,7 @@ class KeepAlivePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_KEEPALIVE
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         return ""
 
 
@@ -127,8 +124,7 @@ class LevelInitPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_LEVELINIT
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -138,8 +134,7 @@ class LevelDataPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_LEVELDATA
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -149,8 +144,7 @@ class LevelFinalizePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_LEVELFINALIZE
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -160,38 +154,37 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_BLOCKCHANGE
 
-    @classmethod
-    def handleData(cls, data):
-        if data["serverType"] == SERVER_TYPES["WorldServer"]:
-            x, y, z, created, block = data["packetData"]
-            if not data["parent"].identified:
-                data["parent"].factory.logger.info(
-                    "Kicked '%s'; did not send a login before building" % data["parent"].ip)
-                data["parent"].sendError("Provide an authentication before building.")
+    def handleData(self, packetData):
+        if self.parent.serverType == SERVER_TYPES["WorldServer"]:
+            x, y, z, created, block = packetData
+            if not self.parent.identified:
+                self.parent.factory.logger.info(
+                    "Kicked '%s'; did not send a login before building" % self.parent.ip)
+                self.parent.sendError("Provide an authentication before building.")
                 return
             if block == 255:
                 # Who sends 255 anyway?
-                data["parent"].factory.logger.debug("%s sent block 255 as 0" % data["parent"].username)
+                self.parent.factory.logger.debug("%s sent block 255 as 0" % self.parent.username)
                 block = 0
             # Check if out of block range or placing invalid blocks
             if block not in BLOCKS.keys() or block in [BLOCKS_BY_NAME["water"], BLOCKS_BY_NAME["lava"]]:
-                data["parent"].factory.logger.info("Kicked '%s' (IP %s); Tried to place invalid block %s" % (
-                                        data["parent"].username, data["parent"].ip, block))
-                data["parent"].sendError("Invalid blocks are not allowed!")
+                self.parent.factory.logger.info("Kicked '%s' (IP %s); Tried to place invalid block %s" % (
+                                        self.parent.username, self.parent.ip, block))
+                self.parent.sendError("Invalid blocks are not allowed!")
                 return
             # TODO Permission Manager
-            if block == 7:  # and not permissionManager.hasWorldPermission(data["parent"].permissions):
-                data["parent"].factory.logger.info("Kicked '%s'; Tried to place bedrock." % data["parent"].ip)
-                data["parent"].sendError("Don't build bedrocks!")
+            if block == 7:  # and not permissionManager.hasWorldPermission(self.parent.permissions):
+                self.parent.factory.logger.info("Kicked '%s'; Tried to place bedrock." % self.parent.ip)
+                self.parent.sendError("Don't build bedrocks!")
                 return
             try:
             # If we're read-only, reverse the change
-                allowBuilding = data["parent"].factory.runHook(
+                allowBuilding = self.parent.factory.runHook(
                     "onBlockClick",
                     {"x": x, "y": y, "z": z, "block": block, "client": data["parent"]}
                 )
                 if not allowBuilding:
-                    data["parent"].sendBlock(x, y, z)
+                    self.parent.sendBlock(x, y, z)
                     return
                 # Track if we need to send back the block change
                 overridden = False
@@ -201,24 +194,24 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
                 if not created:
                     block = 0
                 # Pre-hook, for stuff like /paint
-                new_block = data["parent"].factory.runHook("preBlockChange",
+                new_block = self.parent.factory.runHook("preBlockChange",
                     {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": data["parent"]})
                 if new_block is not None:
                     block = new_block
                     overridden = True
                 # Block detection hook that does not accept any parameters
-                data["parent"].factory.runHook(
+                self.parent.factory.runHook(
                     "blockDetect",
                     {"x": x, "y": y, "z": z, "block": block, "client": data["parent"]}
                 )
                 # Call hooks
-                new_block = data["parent"].factory.runHook(
+                new_block = self.parent.factory.runHook(
                     "blockChange",
                     {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": data["parent"]}
                 )
                 if new_block is False:
                     # They weren't allowed to build here!
-                    data["parent"].sendBlock(x, y, z)
+                    self.parent.sendBlock(x, y, z)
                     return
                 # TODO Use object as hint
                 elif new_block == -1:
@@ -229,19 +222,19 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
                         block = new_block
                         overridden = True
                 # OK, save the block
-                data["parent"].world[x, y, z] = chr(block)
+                self.parent.world[x, y, z] = chr(block)
                 # Now, send the custom block back if we need to
                 if overridden:
-                    data["parent"].sendBlock(x, y, z, block)
+                    self.parent.sendBlock(x, y, z, block)
             # Out of bounds!
             except (KeyError, AssertionError):
-                data["parent"].sendPacket(TYPE_BLOCKSET, x, y, z, "\0")
+                self.parent.sendPacket(TYPE_BLOCKSET, x, y, z, "\0")
             # OK, replay changes to others
             else:
-                data["packetData"].factory.queue.put((data["parent"], TASK_BLOCKSET, (x, y, z, block)))
+                self.parent.factory.queue.put((self.parent, TASK_BLOCKSET, (x, y, z, block)))
         else:
             # Hand it over to the WorldServer
-            data["parent"].factory.relayMCPacketToWorldServer(TYPE_BLOCKCHANGE, data["packetData"])
+            self.parent.factory.relayMCPacketToWorldServer(TYPE_BLOCKCHANGE,packetData)
 
 
 class BlockSetPacketHandler(BaseMinecraftPacketHandler):
@@ -250,8 +243,7 @@ class BlockSetPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_BLOCKSET
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -261,8 +253,7 @@ class SpawnPlayerPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_SPAWNPLAYER
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -272,12 +263,10 @@ class PlayerPosPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_PLAYERPOS
 
-    @classmethod
-    def handleData(cls, data):
+    def handleData(self, packetData):
         pass
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -287,8 +276,7 @@ class PlayerOrtPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_PLAYERORT
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -298,9 +286,8 @@ class PlayerDespawnPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_PLAYERDESPAWN
 
-    @classmethod
-    def packData(cls, data):
-        return TYPE_FORMATS[cls.packetID].encode(data["playerID"])
+    def packData(self, packetData):
+        return TYPE_FORMATS[self.packetID].encode(packetData["playerID"])
 
 
 class MessagePacketHandler(BaseMinecraftPacketHandler):
@@ -309,12 +296,10 @@ class MessagePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_MESSAGE
 
-    @classmethod
-    def handleData(cls, data):
+    def handleData(self, packetData):
         pass
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
 
 
@@ -324,9 +309,8 @@ class ErrorPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_ERROR
 
-    @classmethod
-    def packData(cls, data):
-        return TYPE_FORMATS[cls.packetID].encode(data["error"])
+    def packData(self, packetData):
+        return TYPE_FORMATS[self.packetID].encode(packetData["error"])
 
 
 class SetUserTypePacketHandler(BaseMinecraftPacketHandler):
@@ -335,6 +319,5 @@ class SetUserTypePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_SETUSERTYPE
 
-    @classmethod
-    def packData(cls, data):
+    def packData(self, packetData):
         pass
