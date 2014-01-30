@@ -14,3 +14,5 @@ class HubHandshakePacketHandler(HandshakePacketHandler):
             # See if they are on our allowed list
             if self.parent.transport.getPeer().host not in self.parent.factory.settings["main"]["allowed-ips"]:
                 self.parent.sendError("IP not in allowed list. Check config?")
+            self.parent.sendHandshake()
+            self.parent.connectionEstablished = True

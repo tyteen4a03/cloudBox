@@ -21,6 +21,8 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
     """
     protocol = MinecraftHubServerProtocol
 
+    IS_CLIENT = False
+
     def __init__(self, parentService):
         self.parentService = parentService
         self.clients = {}

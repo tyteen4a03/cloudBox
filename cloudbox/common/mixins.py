@@ -5,6 +5,7 @@
 
 import Queue
 
+from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
 
@@ -42,6 +43,8 @@ class CloudBoxProtocolMixin(object):
     """
 
     loops = LoopRegistry()
+    sentHandshake = False
+    connectionEstablished = False
 
     @property
     def serverName(self):
@@ -55,8 +58,9 @@ class CloudBoxProtocolMixin(object):
     def db(self):
         return self.factory.db
 
-    def sendPacket(self, packetID, packetData={}):
+    def sendPacket(self, packetID, packetData={}, priority=5):
         self.transport.write(self.gpp.packPacket(packetID, packetData))
+        return defer.succeed(None)
 
     def getRequestsPerTick(self, entry):
         return self.factory.getRequestsPerTick(entry)
@@ -102,9 +106,7 @@ class TaskTickMixin(TickMixin):
         d = Deferred()
         self.tasks.put_nowait((
             priority,
-            taskID,
-            taskData,
-            d
+            (taskID, taskData, d)
         ))
         return d
 
@@ -114,6 +116,10 @@ class TaskTickMixin(TickMixin):
             # Pass on for the task handler to handle the task
             func = getattr(self, self.taskHandlers[nextItem[1][0]])
             func(nextItem[1][1], nextItem[1][2])  # The handler function decides when to d.callback()
+
+        if self.tasks.empty():
+            # Don't bother
+            return
 
         limit = self.getRequestsPerTick(self.TASK_LIMIT_NAME)
         if limit == -1:
@@ -140,9 +146,9 @@ class PacketTickMixin(TickMixin):
         d = Deferred()
         self.packetsOut.put_nowait((
             priority,
-            self.gpp.packPacket(packetID, packetData),
-            d
+            (self.gpp.packPacket(packetID, packetData), d)
         ))
+        self.logger.info("Packet added to queue: {}".format(packetID))
         return d
 
     def packetTick(self):
@@ -152,12 +158,16 @@ class PacketTickMixin(TickMixin):
             if isinstance(nextItem[1][1], Deferred):
                 nextItem[1][1].callback()
 
-        limit = self.getRequestsPerTick("outgoing-minecraft")
+        if self.packetsOut.empty():
+            # Don't bother
+            return
+        limit = self.getRequestsPerTick(self.PACKET_LIMIT_NAME)
         if limit == -1:
             while not self.packetsOut.empty():
                 _tick()
         else:
             for i in range(0, limit):
+                self.logger.info("Called")
                 try:
                     _tick()
                 except Queue.Empty:

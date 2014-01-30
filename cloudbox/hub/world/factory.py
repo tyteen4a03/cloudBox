@@ -23,6 +23,8 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
     protocol = WorldServerCommServerProtocol
     remoteServerType = SERVER_TYPES["WorldServer"]
 
+    IS_CLIENT = False
+
     def __init__(self, parentService):
         self.parentService = parentService
         self.worldServers = {}
@@ -47,8 +49,7 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
         for wsID, instance in self.worldServers:
             def cb(stats):
                 return (wsID, stats)
-
-            dL.chainDeferred()
+            dL.chainDeferred(instance.sendPacket().addCallback(cb))
         return dl
 
     def leaveWorldServer(self, proto, wsID):

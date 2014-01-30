@@ -4,29 +4,36 @@
 # cloudBox Package.
 
 from msgpack import Packer
+
 from twisted.internet.protocol import Protocol
+from twisted.internet.task import LoopingCall
 
 from cloudbox.common.gpp import MSGPackPacketProcessor
-from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.mixins import CloudBoxProtocolMixin, PacketTickMixin
 
 
-class WorldServerProtocol(Protocol, CloudBoxProtocolMixin):
+class WorldServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickMixin):
     """
     I am a Protocol for the World Server.
     """
 
+    PACKET_LIMIT_NAME = "outgoing"
+
     ### Twisted-related functions ###
 
-    def makeConnection(self, transport):
-        self.logger = self.factory.logger
-        self.transport = transport
+    def __init__(self, logger):
+        self.logger = logger
         self.ready = False  # Set to False to prevent new connections
-        self.gpp = MSGPackPacketProcessor(self, self.factory.handlers)
-        self.sendHandshake()
+        self.loops = LoopRegistry()
 
     def connectionMade(self):
-        self.ready = True
         self.factory.instance = self
+        self.gpp = MSGPackPacketProcessor(self, self.factory.handlers)
+        self.loops.registerLoop("packets", self.setUpPacketLoop()).start(self.getTickInterval("outgoing"))
+        self.logger.info("Connecting to Hub Server...")
+        self.sendHandshake()
+        self.ready = True
 
     def dataReceived(self, data):
         self.gpp.feed(data)

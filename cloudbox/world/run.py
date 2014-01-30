@@ -18,9 +18,13 @@ def init(serv):
     serv.populateConfig()
 
     # Start up everything.
-    TCP4ClientEndpoint(reactor, serv.settings["world"]["main"]["hub-ip"],
-                       serv.settings["world"]["main"]["hub-port"]).connect(serv.factories["WorldServerFactory"])
+    # Until Endpoint has reconnection abilities, this is unused
+    #TCP4ClientEndpoint(reactor, serv.settings["world"]["main"]["hub-ip"],
+    #                   serv.settings["world"]["main"]["hub-port"]).connect(serv.factories["WorldServerFactory"]).addCallback(serv.factories["WorldServerFactory"])
 
+    reactor.connectTCP(serv.factories["WorldServerFactory"].settings["main"]["hub-ip"],
+                       serv.factories["WorldServerFactory"].settings["main"]["hub-port"],
+                       serv.factories["WorldServerFactory"])
     reactor.run()
 
 

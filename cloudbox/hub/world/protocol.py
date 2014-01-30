@@ -6,28 +6,33 @@
 import logging
 
 from twisted.internet.protocol import Protocol
+from twisted.internet.task import LoopingCall
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
-from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.mixins import CloudBoxProtocolMixin, PacketTickMixin
 
 
-class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
+class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickMixin):
     """
     The protocol class for the WorldServer communicator factory.
     """
 
     remoteServerType = SERVER_TYPES["WorldServer"]
+    PACKET_LIMIT_NAME = "outgoing-world"
 
     def __init__(self):
         self.wsID = None
         self.logger = logging.getLogger("cloudbox.hub.world.protocol._default") # Will be replaced when we get a proper ID
+        self.loops = LoopRegistry()
 
     def connectionMade(self):
         """
         Triggered when connection is established.
         """
         self.gpp = MSGPackPacketProcessor(self, self.factory.handlers)
+        self.loops.registerLoop("packets", self.setUpPacketLoop()).start(self.getTickInterval("outgoing-world"))
 
     def dataReceived(self, data):
         """

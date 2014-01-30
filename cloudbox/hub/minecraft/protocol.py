@@ -21,6 +21,8 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
     Main protocol class for communicating with clients.
     """
 
+    PACKET_LIMIT_NAME = "outgoing-minecraft"
+
     def __init__(self):
         self.playerID = None # UID, stored in DB
         self.sessionID = None # Session ID, used to communicate between client and server

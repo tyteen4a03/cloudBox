@@ -55,7 +55,6 @@ class HandshakePacketHandler(BasePacketHandler):
             self.parent.serverType
         ]
 
-    def _sendHandshakeReply(self):
 
 class DisconnectPacketHandler(BasePacketHandler):
     """

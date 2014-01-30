@@ -21,11 +21,13 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
     retryConnection = False
     remoteServerType = SERVER_TYPES["HubServer"]
 
+    IS_CLIENT = True
+
     def __init__(self, parentService):
         self.parentService = parentService
         self.logger = logging.getLogger("cloudbox.world.factory")
         self.worlds = []
-        self.clients = {}  # {clientID: client ID (assigned by HubServer), clientStates: dict of states}
+        self.clients = {}  # {clientID: clientStates} - clientID: client ID (assigned by HubServer), clientStates: dict of states
         self.instance = None
         self.retryConnection = True
 
@@ -34,13 +36,14 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
 
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())
+        h[TYPE_HANDSHAKE] = ("cloudbox.world.handlers", "WorldHandshakePacketHandler")
         return h
 
     ### Twisted functions
 
     def buildProtocol(self, addr):
         self.resetDelay()
-        proto = WorldServerProtocol()
+        proto = WorldServerProtocol(self.logger)
         proto.factory = self
         return proto
 
@@ -54,7 +57,8 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         If we get disconnected, reconnect to server.
         """
         self.instance = None
-        if self.rebootFlag:
+        if self.retryConnection:
+            self.logger.error("Connection to HubServer lost. Trying again...")
             connector.connect()
 
     def clientConnectionFailed(self, connector, reason):

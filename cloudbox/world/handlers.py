@@ -11,10 +11,11 @@ from cloudbox.common.handlers import HandshakePacketHandler
 
 class WorldHandshakePacketHandler(HandshakePacketHandler):
     def handleData(self, packetData, requestID=0):
-        super(WorldHandshakePacketHandler, self).handleData(packetData, 0)
+        super(WorldHandshakePacketHandler, self).handleData(packetData, requestID)
         if packetData[1] == common.SERVER_TYPES["HubServer"]:
             # OK, connection established
-            self.parent.logger.info("Connection with HubServer established.")
+            self.parent.connectionEstablished = True
+            self.logger.info("Connection with HubServer established.")
 
 
 class StateUpdatePacketHandler(BasePacketHandler):
