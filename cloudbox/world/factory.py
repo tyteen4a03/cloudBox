@@ -9,11 +9,11 @@ from twisted.internet.protocol import ReconnectingClientFactory
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
-from cloudbox.common.mixins import CloudBoxFactoryMixin
+from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.world.protocol import WorldServerProtocol
 
 
-class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin):
+class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTickMixin):
     """
     I am the world server. I host some worlds, and do calculations about them.
     """

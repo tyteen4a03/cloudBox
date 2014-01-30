@@ -11,11 +11,11 @@ from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.cpe import *
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.minecraft.handlers import classic, cpe
-from cloudbox.common.mixins import CloudBoxFactoryMixin
+from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
 
-class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
+class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMixin):
     """
     I am the Minecraft side of the hub. I handle Minecraft client requests and pass them on to World Servers.
     """
@@ -26,6 +26,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
         self.clients = {}
         self.logger = logging.getLogger("cloudbox.hub.mc.factory")
         self.loops = LoopRegistry()
+        self.loops.registerLoop("task", self.setUpTaskLoop()).start(self.getTickInterval())
 
     def startFactory(self):
         self.handlers = self.buildHandlers()
@@ -105,3 +106,5 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin):
         Fetches the ban information using the information given - username, IP, or both.
         """
         pass
+
+    ### Handler methods ###

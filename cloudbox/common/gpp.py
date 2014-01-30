@@ -55,7 +55,7 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
         super(MSGPackPacketProcessor, self).__init__(parent, handlers)
-        self.requests = {}  # Request ID: callback
+        self.requests = []  # Request ID: callback
 
     def feed(self, data):
         self.unpacker.feed(data)
@@ -72,21 +72,28 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         handler = data[0]
         if handler not in self.handlers.keys():
             # TODO Client identifier
-            self.logger.error("Client sent unparsable data (%s, %s)", (handler, data[1:].join(" ")))
+            self.logger.error("Client sent unparsable data (%s, %s)", (handler, repr(data[2])))
         if handler not in self.handlerInstances.keys():
             self.initHandlerClass(handler)
+        requestID = data[1] if data[1] > 0 else None  # requestID 0 = not expecting a response
+
         # Pass it on to the handler to handle this request
-        self.handlerInstances[handler].handleData(data[1:])
+        self.handlerInstances[handler].handleData(data[2], 0)
 
     def packPacket(self, packetID, packetData, callback=None):
         if packetID not in self.handlerInstances.keys():
             self.initHandlerClass(packetID)
-        return self.handlerInstances[packetID].packData(packetData, callback=callback)
+        data = self.handlerInstances[packetID].packData(packetData)
+        requestID = 0
+        if callback is not None:
+            self.requests.append(callback)
+            requestID = len(self.requests - 1)
+        return self.packer.pack([packetID, requestID, data])
 
     def initHandlerClass(self, handlerID):
         # Grab the class
         handlerEntry = self.handlers[handlerID]
-        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger)
+        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger, self)
         self.handlerInstances[handlerID].packer = self.packer
         self.handlerInstances[handlerID].unpacker = self.unpacker
 
@@ -125,7 +132,7 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
         # Pass it on to the handler to handle this request
         if packetID not in self.handlerInstances.keys():
             self.initHandlerClass(packetID)
-        self.handlers[packetID].handleData(packetData)
+        self.handlers[packetID].handleData(packetData, 0)
 
     def packPacket(self, packetID, packetData, withoutHeader=False):
         if packetID not in self.handlerInstances.keys():

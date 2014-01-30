@@ -70,6 +70,7 @@ class IGeneralPacketProcessor(Interface):
         Populates base variables to pass to handlers.
         """
 
+
 class ILoopRegistry(Interface):
     """
     Interface for a Loop Registry.

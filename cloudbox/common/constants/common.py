@@ -19,6 +19,16 @@ SERVER_TYPES = {
 
 SERVER_TYPES_INV = dict((v, k) for k, v in SERVER_TYPES.iteritems())
 
+# Because I am horribly lazy
+SERVER_TYPES_ABBRV = {
+    "hub": 0,
+    "world": 1,
+    "web": 2,
+    "hbservice": 3,
+}
+
+SERVER_TYPES_ABBRV_INV = dict((v, k) for k, v in SERVER_TYPES_ABBRV.iteritems())
+
 DEFAULT_PERMISSIONS = {
 
 }

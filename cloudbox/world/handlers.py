@@ -10,15 +10,17 @@ from cloudbox.common.handlers import HandshakePacketHandler
 
 
 class WorldHandshakePacketHandler(HandshakePacketHandler):
-    def handleData(self, packetData):
-        super(WorldHandshakePacketHandler, self).handleData(packetData)
+    def handleData(self, packetData, requestID=0):
+        super(WorldHandshakePacketHandler, self).handleData(packetData, 0)
         if packetData[1] == common.SERVER_TYPES["HubServer"]:
             # OK, connection established
             self.parent.logger.info("Connection with HubServer established.")
 
 
 class StateUpdatePacketHandler(BasePacketHandler):
-    def handleData(self, packetData):
+    packetID = handlers.TYPE_STATE_UPDATE
+
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):
@@ -26,15 +28,16 @@ class StateUpdatePacketHandler(BasePacketHandler):
 
 
 class LoadWorldPacketHandler(BasePacketHandler):
-    def handleData(self, packetData):
+    packetID = handlers.TYPE_LOAD_WORLD
+
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):
-        return self.packer.pack([
-            handlers.TYPE_LOAD_WORLD,
+        return [
             packetData["worldID"],
             # Optional fields if hub wants the world to load the data from the database - not sure why anybody
             # would do this but oh well
             packetData["worldName"],
-            packetData[""]
-        ])
+            packetData["worldFilename"]
+        ]

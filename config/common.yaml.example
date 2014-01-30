@@ -12,19 +12,16 @@ db:
         # SQLite
         file: data/db/cloudbox.db
 advanced:
-  requests-per-tick:
-    dbclient-incoming: 500
-    dbclient-outgoing: 500
-    dbserver-incoming: 500
-    dbserver-outgoing: 500
-    hub-incoming: 500
-    hub-minecraft: 500
-    world-incoming: 500
-    world-outgoing: 500
-    world-physics: 1500
-  tick-length:
-    dbclient: 0.01
-    dbserver: 0.01
-    hub: 0.01
-    world: 0.01
-    world-physics: 0.01
+      requests-per-tick:
+            hub-incoming: 500
+            hub-outgoing-minecraft: 500
+            hub-outgoing-world: 500
+            hub-tasks: 5000
+            world-incoming: 500
+            world-outgoing: 500
+            world-physics: 1500
+            world-tasks: 5000
+      tick-interval:
+            hub: 0.01
+            world: 0.01
+            world-physics: 0.01

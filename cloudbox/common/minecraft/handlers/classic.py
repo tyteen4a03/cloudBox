@@ -36,7 +36,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_INITIAL
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         # Get the client's details
         protocol, self.parent.username, mppass, utype = packetData
         if self.parent.identified:
@@ -154,7 +154,7 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_BLOCKCHANGE
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         if self.parent.serverType == SERVER_TYPES["WorldServer"]:
             x, y, z, created, block = packetData
             if not self.parent.identified:
@@ -228,7 +228,7 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
                     self.parent.sendBlock(x, y, z, block)
             # Out of bounds!
             except (KeyError, AssertionError):
-                self.parent.sendPacket(TYPE_BLOCKSET, x, y, z, "\0")
+                self.parent.sendPacket(TYPE_BLOCKSET, x, y)
             # OK, replay changes to others
             else:
                 self.parent.factory.queue.put((self.parent, TASK_BLOCKSET, (x, y, z, block)))
@@ -263,7 +263,7 @@ class PlayerPosPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_PLAYERPOS
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):
@@ -296,7 +296,7 @@ class MessagePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_MESSAGE
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):

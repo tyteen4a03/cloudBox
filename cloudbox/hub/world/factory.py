@@ -5,15 +5,17 @@
 
 import logging
 
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ServerFactory
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
-from cloudbox.common.mixins import CloudBoxFactoryMixin
+from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.hub.world.protocol import WorldServerCommServerProtocol
 
 
-class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin):
+class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMixin):
     """
     I listen to World Servers and interact with them, acting as a proxy.
     """
@@ -25,9 +27,12 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin):
         self.parentService = parentService
         self.worldServers = {}
         self.logger = logging.getLogger("cloudbox.hub.world.factory")
+        self.loops = LoopRegistry()
+        self.loops.registerLoop("tasks", self.setUpTaskLoop())
 
     def startFactory(self):
         self.handlers = self.buildHandlers()
+        self.loops["tasks"].start(self.getTickInterval())
 
     def buildHandlers(self):
         h = dict(HANDLERS_CLIENT_BASIC.items() + HANDLERS_WORLD_SERVER.items())
@@ -36,12 +41,15 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin):
 
     def getServerStats(self):
         """
-        Gets the current load for each World Server and assemble them in a dict of {wsID: SLA}.
+        Gets the current load for each World Server.
         """
-        ret = {}
+        dL = DeferredList()
         for wsID, instance in self.worldServers:
-            ret[wsID] = instance.getStats()["sla"]
-        return ret
+            def cb(stats):
+                return (wsID, stats)
+
+            dL.chainDeferred()
+        return dl
 
     def leaveWorldServer(self, proto, wsID):
         """

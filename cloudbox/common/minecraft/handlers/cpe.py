@@ -14,7 +14,7 @@ class ExtInfoPacketHandler(BaseMinecraftPacketHandler):
 
     packetID = TYPE_EXTINFO
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):
@@ -27,7 +27,7 @@ class ExtEntryPacketHandler(BaseMinecraftPacketHandler):
 
     packetID = TYPE_EXTENTRY
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         pass
 
     def packData(self, packetData):

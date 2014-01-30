@@ -10,11 +10,12 @@ from cloudbox.world.factory import WorldServerFactory
 
 
 def init(serv):
+    serv.loadConfig(populate=False)
     # Minecraft part of the Hub
     serv.factories["WorldServerFactory"] = WorldServerFactory(serv)
 
     # Populate configuration.
-    serv.loadConfig()
+    serv.populateConfig()
 
     # Start up everything.
     TCP4ClientEndpoint(reactor, serv.settings["world"]["main"]["hub-ip"],

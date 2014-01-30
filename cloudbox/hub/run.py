@@ -12,13 +12,15 @@ from cloudbox.hub.world.factory import WorldServerCommServerFactory
 
 
 def init(serv):
+    # Populate configuration.
+    serv.loadConfig(populate=False)
+
     # Minecraft part of the Hub
     serv.factories["MinecraftHubServerFactory"] = MinecraftHubServerFactory(serv)
     # WorldServer part of the Hub
     serv.factories["WorldServerCommServerFactory"] = WorldServerCommServerFactory(serv)
 
-    # Populate configuration.
-    serv.loadConfig()
+    serv.populateConfig()
 
     # Load up the database.
     serv.loadDatabase()

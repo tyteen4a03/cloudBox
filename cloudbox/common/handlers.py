@@ -15,50 +15,55 @@ class BasePacketHandler(object):
     """
     implements(IPacketHandler)
 
-    def __init__(self, parent, logger):
+    def __init__(self, parent, logger, gpp):
         self.parent = parent
         self.logger = logger
+        self.gpp = gpp
 
 
 class KeepAlivePacketHandler(BasePacketHandler):
     """
     A Handler class for keep-alive.
     """
+    packetID = handlers.TYPE_KEEPALIVE
 
     def packData(self, packetData):
-        return "\x91\x00"  # This is static so might as well pre-pack it :D
+        return []
 
 
 class HandshakePacketHandler(BasePacketHandler):
     """
     A Handler class for packet HandshakeRequest.
     """
+    packetID = handlers.TYPE_HANDSHAKE
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         # See if they are in our allowed list
         if not self.parent.transport.getPeer().host in self.parent.factory.settings["main"]["allowed-ips"]:
             # Refuse connection
             self.parent.sendError("You are not connecting from an authorized IP.")
             self.parent.transport.loseConnection()
-        if packetData[1] not in common.SERVER_TYPES:
+        if packetData[1] not in common.SERVER_TYPES_INV:
             # Who are you?
             self.parent.sendError("Server type undefined.")
             self.parent.transport.loseConnection()
+        # The rest of the operations are carried out by the classes that subclass us
 
     def packData(self, packetData):
-        return self.packer.pack([
-            handlers.TYPE_HANDSHAKE,
+        return [
             self.parent.serverName,
             self.parent.serverType
-        ])
+        ]
 
+    def _sendHandshakeReply(self):
 
 class DisconnectPacketHandler(BasePacketHandler):
     """
     A Handler class for Server Shutdown.
     """
+    packetID = handlers.TYPE_HANDSHAKE
 
-    def handleData(self, packetData):
+    def handleData(self, packetData, requestID=0):
         # TODO ErrorID
         self.logger.info("{} closed connection, reason: {}".format(
             common.SERVER_TYPES_INV[packetData[0]], packetData[3]))
@@ -75,10 +80,9 @@ class DisconnectPacketHandler(BasePacketHandler):
         self.parent.transport.loseConnection()
 
     def packData(self, packetData):
-        return self.packer.pack([
-            handlers.TYPE_DISCONNECT,
+        return [
             self.parent.serverType, # In case the handshake failed
             packetData["disconnectType"],
             packetData["errorID"],
             packetData["message"]
-        ])
+        ]

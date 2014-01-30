@@ -5,8 +5,7 @@
 
 # 0x0, 1, 2 are reserved for globally used packets,
 # 0x3, 4 are reserved for world servers,
-# 0x5, 6 are reserved for database servers,
-# 0x7, 8, 9 are reserved for web servers.
+# 0x5, 6 are reserved for web servers.
 # 0xF are reserved for exception handling (shared globally)
 
 TYPE_KEEPALIVE = 0x00
@@ -41,6 +40,12 @@ HANDLERS_WORLD_SERVER = {
     TYPE_STATEID_ALLOCATION: ("cloudbox.world.handlers", "ClientStateIDAllocationPacketHandler"),
     TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "ClientStateUpdatePacketHandler"),
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
+}
+
+TASK_SEND_PACKET = 0x00
+
+TASKS_HUB_MC = {
+
 }
 
 # Future consideration: Unused for now

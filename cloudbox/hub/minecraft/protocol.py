@@ -70,7 +70,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         self.transport.write(msg)
 
-    def sendPacket(self, packetID, packetData):
+    def sendPacket(self, packetID, packetData={}):
         self.transport.write(self.gpp.packPacket(packetID, packetData))
 
     def sendError(self, error, disconnectNow=False):
