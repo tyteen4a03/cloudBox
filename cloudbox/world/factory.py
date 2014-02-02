@@ -27,7 +27,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         self.parentService = parentService
         self.logger = logging.getLogger("cloudbox.world.factory")
         self.worlds = []
-        self.clients = {}  # {clientID: clientStates} - clientID: client ID (assigned by HubServer), clientStates: dict of states
+        self.clients = {}  # {clientID: clientStates} - clientID: player ID, clientStates: dict of states
         self.instance = None
         self.retryConnection = True
 

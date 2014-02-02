@@ -5,6 +5,7 @@
 
 import logging
 
+from netaddr import IPAddress
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, connectionDone as _connDone
 
@@ -45,7 +46,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         if self.sessionID is None:
             self.sendError("The server is full.")
             return
-        self.ip = self.transport.getPeer().host
+        self.ip = IPAddress(self.transport.getPeer().host)
         self.logger = logging.getLogger("cloudbox.hub.mc.protocol.{}".format(self.sessionID))
         self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers)
 

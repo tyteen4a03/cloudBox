@@ -62,44 +62,50 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             return
         #value = self.parent.factory.runHook("prePlayerConnect", {"client": self})
 
-        # Are they banned?
-        bans = self.parent.factory.getBans(self.parent.username, self.parent.ip)
-        if bans:
-            self.parent.sendError("You are banned: %s" % bans[-1]["reason"])
-            return
+        def gotBans(data):
+            # Are they banned?
+            bans = data[2]
+            if bans:
+                self.parent.sendError("You are banned: %s" % bans[-1]["reason"])
+                return
 
-        # OK, see if there's anyone else with that username
-        usernameList = self.parent.factory.buildUsernameList()
-        if self.parent.username.lower() in usernameList:
-            # Kick the other guy out
-            self.parent.factory.clients[usernameList[self.parent.username.lower()].id]["protocol"].sendError(
-                "You logged in on another computer.", disconnectNow=True)
-            return
+        def gotData(data):
+            # OK, see if there's anyone else with that username
+            usernameList = self.parent.factory.buildUsernameList()
+            if self.parent.username.lower() in usernameList:
+                # Kick the other guy out
+                self.parent.factory.clients[usernameList[self.parent.username.lower()].id]["protocol"].sendError(
+                    "You logged in on another computer.", disconnectNow=True)
+                return
 
-        # All check complete. Request World Server to prepare level
-        self.parent.identified = True
-        self.parent.factory.clients[self.parent.sessionID]["username"] = self.parent.username
-        self.parent.factory.assignWorldServer(data["parent"])
-        self.parent.joinDefaultWorld()
+            # All check complete. Request World Server to prepare level
+            self.parent.identified = True
+            self.parent.factory.clients[self.parent.sessionID]["username"] = self.parent.username
+            self.parent.factory.assignWorldServer(data["parent"])
+            self.parent.joinDefaultWorld()
 
-        # Announce our presence
-        self.parent.factory.logger.info("Connected, as '%s'" % self.parent.username)
-        #for client in self.parent.factory.usernames.values():
-        #    client.sendServerMessage("%s has come online." % self.parent.username)
+            # Announce our presence
+            self.parent.factory.logger.info("Connected, as '%s'" % self.parent.username)
+            #for client in self.parent.factory.usernames.values():
+            #    client.sendServerMessage("%s has come online." % self.parent.username)
 
-        # Send them back our info.
-        # TODO: CPE
-        #if self.parent.factory.settings["main"]["enable-cpe"]:
-        #    self.parent.sendPacket(TYPE_EXTINFO, len(self.parent.cpeExtensions)
+            # Send them back our info.
+            # TODO: CPE
+            #if self.parent.factory.settings["main"]["enable-cpe"]:
+            #    self.parent.sendPacket(TYPE_EXTINFO, len(self.parent.cpeExtensions)
 
-        self.parent.sendPacket(TYPE_INITIAL, {
-            "protocolVersion": 7, # Protocol version
-            "serverName": packString(self.parent.factory.settings["main"]["name"]),
-            "serverMOTD": packString(self.parent.factory.settings["main"]["motd"]),
-            #"userPermission": 100 if (self.isOp() if hasattr(self, "world") else False) else 0, # TODO
-            "userPermission": 0
-        })
-        self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
+            self.parent.sendPacket(TYPE_INITIAL, {
+                "protocolVersion": 7,  # Protocol version
+                "serverName": packString(self.parent.factory.settings["main"]["name"]),
+                "serverMOTD": packString(self.parent.factory.settings["main"]["motd"]),
+                #"userPermission": 100 if (self.isOp() if hasattr(self, "world") else False) else 0, # TODO
+                "userPermission": 0
+            })
+            self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
+
+        self.parent.factory.getBans(self.parent.username, self.parent.ip).addCallback(gotBans)
+        d1 = self.parent.factory.assignWorldServer()
+        dl = DeferredList([d1, d2])
 
     def packData(self, packetData):
         return TYPE_FORMATS[TYPE_INITIAL].encode(packetData["protocolVersion"],

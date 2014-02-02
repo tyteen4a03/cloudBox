@@ -39,6 +39,7 @@ ERRORS = {
     "unknown": 0,
     "ioerror": 1,
     "connection_lost": 2,
+    "no_results": 3,
     # Generic server link
     "connection_refused": 10,
     # GPP
@@ -89,4 +90,20 @@ COLOUR_RED = "&c"
 COLOUR_PURPLE = "&d"
 COLOUR_YELLOW = "&e"
 COLOUR_WHITE = "&f"
+
+SERVICES = {
+    0: "Minecraft.net",
+    1: "ClassiCube"
+}
+
+ACTIONS = {
+    0: "login",
+    1: "logout",
+    2: "register",
+    3: "verfifyEmail",
+    4: "associate",
+    5: "editProfile",  # Edit self
+    6: "editWorld",
+    7: "editUser",  # Edit other
+}
 

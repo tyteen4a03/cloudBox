@@ -45,12 +45,28 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
         """
         Gets the current load for each World Server.
         """
-        dL = DeferredList()
+        dL = DeferredList([])
         for wsID, instance in self.worldServers:
             def cb(stats):
-                return (wsID, stats)
+                return wsID, stats
             dL.chainDeferred(instance.sendPacket().addCallback(cb))
-        return dl
+        return dL
+
+    def getWorldServerByWorldName(self, worldName):
+        return self.db.runQuery("SELECT worldServerID FROM cb_worlds WHERE worldName = ?", worldName)
+
+    # TODO Reuse this POS - What was I even thinking?
+    def getOnlineWorldServerByWorldName(self, worldName):
+        def cb(res):
+            finalList = []
+            for row in res:
+                ws = row[0]
+                # Check if it's online
+                if ws in self.worldServers:
+                    finalList.append(ws)
+            return finalList
+        return self.getWorldServerByWorldName(worldName).addCallback(cb)
+
 
     def leaveWorldServer(self, proto, wsID):
         """

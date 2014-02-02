@@ -8,7 +8,8 @@ A package of configuration constants.
 """
 
 CFGVERSION = {
+    "common.yaml": (1, 0, 0),
     "hub.yaml": (1, 0, 0),
-    "database.yaml": (1, 0, 0),
+    "web.yaml": (1, 0, 0),
     "world.yaml": (1, 0, 0),
 }

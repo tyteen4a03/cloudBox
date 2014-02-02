@@ -22,10 +22,23 @@ class StateUpdatePacketHandler(BasePacketHandler):
     packetID = handlers.TYPE_STATE_UPDATE
 
     def handleData(self, packetData, requestID=0):
-        pass
+        if len(packetData) == 1:
+            # Delete whatever we have
+            del self.parent.factory.clients[packetData[0]]
+            return
+        self.parent.factory.clients[packetData[0]].update(packetData)
+        if len(packetData) == 3:
+            for key in packetData[2]:
+                del self.parent.factory.clients[packetData[0]][key]
 
     def packData(self, packetData):
-        pass
+        l = [packetData["clientID"]]
+        if packetData["clientState"]:
+            # If we are not clearing the opposite side's data
+            l.append(packetData["clientState"])
+        if packetData["keysToDelete"]:
+            l.append(packetData["keysToDelete"])
+        return l
 
 
 class LoadWorldPacketHandler(BasePacketHandler):

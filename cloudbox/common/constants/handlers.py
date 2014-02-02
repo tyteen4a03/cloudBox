@@ -12,9 +12,8 @@ TYPE_KEEPALIVE = 0x00
 TYPE_HANDSHAKE = 0x01
 TYPE_GET_STATUS = 0x02
 
-TYPE_STATEID_ALLOCATION = 0x30
-TYPE_STATE_UPDATE = 0x31
-TYPE_LOAD_WORLD = 0x32
+TYPE_STATE_UPDATE = 0x30
+TYPE_LOAD_WORLD = 0x31
 
 TYPE_ERROR = 0xFE
 TYPE_DISCONNECT = 0xFF
@@ -37,7 +36,6 @@ HANDLERS_SERVER_BASIC = {
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
 HANDLERS_WORLD_SERVER = {
-    TYPE_STATEID_ALLOCATION: ("cloudbox.world.handlers", "ClientStateIDAllocationPacketHandler"),
     TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "ClientStateUpdatePacketHandler"),
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }

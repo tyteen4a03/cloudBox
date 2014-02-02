@@ -52,13 +52,17 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickM
             "players": 0
         }
 
+    ### Packet functions ###
+    def sendClient
+
     ### End-client related functions ###
 
     def protoDoJoinServer(self, proto, world=None):
         """
         Makes the protocol join the server.
         """
-        pass
+        self.send
+        self.logger.info("Sent request for {} to join worldServer {}".format(proto.username, self.wsID))
 
     def protoDoLeaveServer(self, proto):
         """

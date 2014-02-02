@@ -1,7 +1,7 @@
 cloudBox Protocol
 Version 1
 
-Copyright 2012 - 2013 the cloudBox team, under BSD-2 Clause Modified License.
+Copyright 2012 - 2014 the cloudBox team, under BSD-2 Clause Modified License.
 
 Terminologies:
 Disconnect the server/client - Send a Disconnect packet with the appropriate DisconnectType, then close the connection.
@@ -52,38 +52,24 @@ When connection is made, client must send a Handshake packet, and wait for eithe
 packet indicating successful handshaking.
 
 
-
-0x04 - State ID Allocation
+0x30 - State Update
 Two-way
 Used by: HubServer, WorldServer
 Direction: * <-> *
 
 Both ways
 Packet Data:
-RequestID: A random integer.
-ClientID: A State ID. Integer.
-
-Handling of packet (Server to Client):
-StateRepository ID Control resides at the Server. If the Server wishes to add a new entry, it must generate a random
-integer as the RequestID, and send it to the Client. The Client must respond with the same packet, indicating the
-entry has been successfully added.
-
-If the Client wishes to add a new entry, it must generate a random integer as the Request ID, and set the ClientID
-to 0. The server then must respond with the same RequestID and the newly allocated ClientID.
-
-
-0x05 - State Update
-Two-way
-Used by: HubServer, WorldServer
-Direction: * <-> *
-
-Both ways
-Packet Data:
-ClientID: The client's ID the sender wishes to update. Must be an integer.
-ClientState: A dictionary of any state the sender wishes to update.
+clientID: The client's player ID the sender wishes to update. Must be an integer.
+clientState: A dictionary of any state the sender wishes to update.
+keysToDelete: A list of any keys to delete. Optional.
 
 Handling of packet (Both Ways):
 Both sides are expected to overwrite values according to the client.
 
 
-0x06 -
+0x31 - Load World
+Server to Client
+HubServer -> WorldServer
+
+PacketData:
+worldID: WorldID

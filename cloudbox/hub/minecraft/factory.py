@@ -5,13 +5,18 @@
 
 import logging
 
+from twisted.internet import defer
 from twisted.internet.protocol import ServerFactory
+from twisted.internet.defer import Deferred, DeferredList
 
 from cloudbox.common.constants.classic import *
+from cloudbox.common.constants.common import *
 from cloudbox.common.constants.cpe import *
+from cloudbox.common.exceptions import ErrorCodeException
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.minecraft.handlers import classic, cpe
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
+from cloudbox.hub.exceptions import WorldServerLinkException
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
 
@@ -85,8 +90,27 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
     def relayMCPacketToWorldServer(self, packetID, packetData):
         pass
 
-    def assignWorldServer(self, proto):
-        pass
+    def assignWorldServer(self, proto, world=None):
+        if not world:
+            world = "default"  # TODO Link to settings
+        assert proto.worldServer is None, "Tried to reassign already assigned client."
+
+        def afterAddedNewClient(wsProto):
+            # Confirm the assginment
+            proto.worldServer = wsProto
+
+        def gotWorldServer(res):
+            if not res:
+                raise ErrorCodeException(ERRORS["no_results"])
+            ws = res[0][0]
+            if ws not in self.getFactory("WorldServerCommServerFactory").worldServers:
+                raise WorldServerLinkException(ERRORS["worldserver_link_not_established"])
+            wsProto = self.getFactory("WorldServerCommServerFactory").worldServers[ws]
+            return wsProto.protoDoJoinServer(proto, world).addCallback(afterAddedNewClient, wsProto)
+
+        return self.db.runQuery("""SELECT worldServerID FROM cb_worlds
+                                 WHERE name = ?""",
+                                 world).addCallback(gotWorldServer)
 
     def buildUsernameList(self, wsID=None):
         """
@@ -103,10 +127,12 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
                     theList[cEntry["username"].lower()] = cEntry["protocol"]
         return theList
 
-    def getBans(self, *args):
+    def getBans(self, username=None, ip=None):
         """
         Fetches the ban information using the information given - username, IP, or both.
         """
-        pass
+        assert not (username is None and ip is None)
+        if username and ip is None:
+            self.db.runQuery("SELECT * FROM cb_bans WHERE ")
 
     ### Handler methods ###
