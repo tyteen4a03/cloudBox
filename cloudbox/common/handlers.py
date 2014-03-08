@@ -56,6 +56,26 @@ class HandshakePacketHandler(BasePacketHandler):
         ]
 
 
+class CallbackPacketHandler(BasePacketHandler):
+    """
+    A Handler class for callbacks.
+    """
+    packetID = handlers.TYPE_CALLBACK
+
+    def handleData(self, packetData, requestID=0):
+        # Try to locate the request
+        request = self.gpp.requests[requestID]
+        if packetData[0]: # Success!
+            request.callback(packetData[1])
+        else:
+            request.errback(packetData[1])
+
+    def packData(self, packetData):
+        return [
+            packetData["isSuccess"],
+            packetData["data"]
+        ]
+
 class DisconnectPacketHandler(BasePacketHandler):
     """
     A Handler class for Server Shutdown.

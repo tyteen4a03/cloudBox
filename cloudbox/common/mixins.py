@@ -59,8 +59,7 @@ class CloudBoxProtocolMixin(object):
         return self.factory.db
 
     def sendPacket(self, packetID, packetData={}, priority=5):
-        self.transport.write(self.gpp.packPacket(packetID, packetData))
-        return defer.succeed(None)
+        return self.gpp.sendPacket(packetID, packetData, priority)
 
     def getRequestsPerTick(self, entry):
         return self.factory.getRequestsPerTick(entry)
@@ -134,44 +133,3 @@ class TaskTickMixin(TickMixin):
 
     def setUpTaskLoop(self):
         return LoopingCall(self.taskTick)
-
-
-class PacketTickMixin(TickMixin):
-    """
-    A mixin for packet sending. Expects a CloudBoxProtocolMixin.
-    """
-    packetsOut = Queue.PriorityQueue()
-
-    def sendPacket(self, packetID, packetData={}, priority=5):
-        d = Deferred()
-        self.packetsOut.put_nowait((
-            priority,
-            (self.gpp.packPacket(packetID, packetData), d)
-        ))
-        self.logger.info("Packet added to queue: {}".format(packetID))
-        return d
-
-    def packetTick(self):
-        def _tick():
-            nextItem = self.packetsOut.get_nowait()  # (priority, (prepacked packet, callback))
-            self.transport.write(nextItem[1][0])
-            if isinstance(nextItem[1][1], Deferred):
-                nextItem[1][1].callback()
-
-        if self.packetsOut.empty():
-            # Don't bother
-            return
-        limit = self.getRequestsPerTick(self.PACKET_LIMIT_NAME)
-        if limit == -1:
-            while not self.packetsOut.empty():
-                _tick()
-        else:
-            for i in range(0, limit):
-                self.logger.info("Called")
-                try:
-                    _tick()
-                except Queue.Empty:
-                    break
-
-    def setUpPacketLoop(self):
-        return LoopingCall(self.packetTick)

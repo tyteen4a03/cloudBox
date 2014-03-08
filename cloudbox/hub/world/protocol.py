@@ -9,12 +9,13 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.task import LoopingCall
 
 from cloudbox.common.constants.common import *
+from cloudbox.common.constants.handlers import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.loops import LoopRegistry
-from cloudbox.common.mixins import CloudBoxProtocolMixin, PacketTickMixin
+from cloudbox.common.mixins import CloudBoxProtocolMixin
 
 
-class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickMixin):
+class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
     """
     The protocol class for the WorldServer communicator factory.
     """
@@ -31,7 +32,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickM
         """
         Triggered when connection is established.
         """
-        self.gpp = MSGPackPacketProcessor(self, self.factory.handlers)
+        self.gpp = MSGPackPacketProcessor(self, self.factory.handlers, self.transport)
         self.loops.registerLoop("packets", self.setUpPacketLoop()).start(self.getTickInterval("outgoing-world"))
 
     def dataReceived(self, data):
@@ -53,7 +54,15 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickM
         }
 
     ### Packet functions ###
-    def sendClient
+    def sendClientStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
+        self.sendPacket(TYPE_STATE_UPDATE,
+        {
+            "sessionID": sessionID,
+            "clientState": states,
+            "keysToDelete": keysToDelete
+        },
+
+        )
 
     ### End-client related functions ###
 
@@ -61,7 +70,11 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, PacketTickM
         """
         Makes the protocol join the server.
         """
-        self.send
+        toSend = ["playerID", "username", "ip"]
+        # Send the basic information over
+        self.sendClientStateUpdate(proto.sessionID, {
+            "playerID": proto.playerID
+        })
         self.logger.info("Sent request for {} to join worldServer {}".format(proto.username, self.wsID))
 
     def protoDoLeaveServer(self, proto):

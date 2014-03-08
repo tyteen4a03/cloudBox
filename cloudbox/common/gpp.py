@@ -5,9 +5,10 @@
 
 import importlib
 import logging
+import Queue
 
 import msgpack
-from twisted.internet.protocol import Factory
+from twisted.internet.defer import Deferred
 from zope.interface import implements
 
 from cloudbox.common.interfaces import IGeneralPacketProcessor
@@ -20,10 +21,13 @@ class BaseGeneralPacketProcessor(object):
     implements(IGeneralPacketProcessor)
 
     name = None
+    packetsOut = Queue.PriorityQueue()
 
-    def __init__(self, parent, handlers):
+    def __init__(self, parent, handlers, transport):
         self.parent = parent
         self.handlers = handlers
+        self.transport = transport
+        self.requests = []
         self.handlerInstances = {}
         self.logger = logging.getLogger("cloudbox.gpp.{}".format(self.name))
 
@@ -37,8 +41,42 @@ class BaseGeneralPacketProcessor(object):
     def parseFirstPacket(self):
         pass
 
-    def packPacket(self, packetID, packetData):
+    def packPacket(self, packetID, packetData, requestID=None):
         pass
+
+    def sendPacket(self, packetID, packetData={}, priority=5):
+        d = Deferred()
+        self.requests.append(d)
+        requestID = len(self.requests) - 1
+        self.packetsOut.put_nowait((
+            priority,
+            (self.packPacket(packetID, packetData, requestID), d)
+        ))
+        self.logger.info("Packet added to queue: {}".format(packetID))
+        return d
+
+    def _sendPacket(self, packet):
+        self.transport.write(packet)
+
+    def packetTick(self):
+        if self.packetsOut.empty():
+            # Don't bother
+            return
+
+        def _tick():
+            nextItem = self.packetsOut.get_nowait()  # (priority, (prepacked packet, callback))
+            self._sendPacket(nextItem[1][0])
+
+        limit = self.parent.getRequestsPerTick(self.parent.PACKET_LIMIT_NAME)
+        if limit == -1:
+            while not self.packetsOut.empty():
+                _tick()
+        else:
+            for i in range(0, limit):
+                try:
+                    _tick()
+                except Queue.Empty:
+                    break
 
 
 class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
@@ -48,13 +86,13 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
 
     name = "msgpack"
 
-    def __init__(self, parent, handlers):
+    def __init__(self, parent, handlers, transport):
         """
         Initialization.
         """
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
-        super(MSGPackPacketProcessor, self).__init__(parent, handlers)
+        super(MSGPackPacketProcessor, self).__init__(parent, handlers, transport)
         self.requests = []  # Request ID: callback
 
     def feed(self, data):
@@ -80,14 +118,10 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         # Pass it on to the handler to handle this request
         self.handlerInstances[handler].handleData(data[2], 0)
 
-    def packPacket(self, packetID, packetData, callback=None):
+    def packPacket(self, packetID, packetData, requestID=None):
         if packetID not in self.handlerInstances.keys():
             self.initHandlerClass(packetID)
         data = self.handlerInstances[packetID].packData(packetData)
-        requestID = 0
-        if callback is not None:
-            self.requests.append(callback)
-            requestID = len(self.requests - 1)
         return self.packer.pack([packetID, requestID, data])
 
     def initHandlerClass(self, handlerID):
@@ -104,8 +138,8 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
     """
     name = "minecraftClassic"
 
-    def __init__(self, parent, handlers):
-        super(MinecraftClassicPacketProcessor, self).__init__(parent, handlers)
+    def __init__(self, parent, handlers, transport):
+        super(MinecraftClassicPacketProcessor, self).__init__(parent, handlers, transport)
         # Reference from the protocol - this /may/ cause problems due to lots of GPPs being created at peak hours,
         # but it's fine for now - need to monitor
         self.buffer = ""
@@ -133,6 +167,15 @@ class MinecraftClassicPacketProcessor(BaseGeneralPacketProcessor):
         if packetID not in self.handlerInstances.keys():
             self.initHandlerClass(packetID)
         self.handlers[packetID].handleData(packetData, 0)
+
+    def sendPacket(self, packetID, packetData={}, priority=5):
+        d = Deferred()
+        self.packetsOut.put_nowait((
+            priority,
+            (self.packPacket(packetID, packetData), d)
+        ))
+        self.logger.info("Packet added to queue: {}".format(packetID))
+        return d
 
     def packPacket(self, packetID, packetData, withoutHeader=False):
         if packetID not in self.handlerInstances.keys():

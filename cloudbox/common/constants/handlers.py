@@ -11,6 +11,7 @@
 TYPE_KEEPALIVE = 0x00
 TYPE_HANDSHAKE = 0x01
 TYPE_GET_STATUS = 0x02
+TYPE_CALLBACK = 0x03
 
 TYPE_STATE_UPDATE = 0x30
 TYPE_LOAD_WORLD = 0x31
@@ -24,6 +25,7 @@ TYPE_DISCONNECT = 0xFF
 HANDLERS_CLIENT_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
+    TYPE_CALLBACK: ("cloudbox.common.handlers", "CallbackPacketHandler"),
     TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
@@ -32,6 +34,7 @@ HANDLERS_CLIENT_BASIC = {
 HANDLERS_SERVER_BASIC = {
     TYPE_KEEPALIVE: ("cloudbox.common.handlers", "KeepAlivePacketHandler"),
     TYPE_HANDSHAKE: ("cloudbox.common.handlers", "HandshakePacketHandler"),
+    TYPE_CALLBACK: ("cloudbox.common.handlers", "CallbackPacketHandler"),
     TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
@@ -40,8 +43,9 @@ HANDLERS_WORLD_SERVER = {
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }
 
-TASK_SEND_PACKET = 0x00
+TASKS_GLOBAL = {
 
+}
 TASKS_HUB_MC = {
 
 }
@@ -62,8 +66,7 @@ PACKET_DEFS = {}
 
 PACKET_DEFS[TYPE_KEEPALIVE] = namedtuple("KeepAlivePacket", [])
 PACKET_DEFS[TYPE_HANDSHAKE] = namedtuple("HandshakePacket", ["serverName", "serverType"])
-PACKET_DEFS[TYPE_STATEID_ALLOCATION] = namedtuple("StateIDAllocationPacket", ["requestID", ""])
-PACKET_DEFS[TYPE_STATE_UPDATE] = namedtuple("StateUpdatePacket", ["playerID", "updates"])
+PACKET_DEFS[TYPE_STATE_UPDATE] = namedtuple("StateUpdatePacket", ["sessionID", "updates"])
 PACKET_DEFS[TYPE_LOAD_WORLD] = namedtuple("LoadWorldPacket", [])
 PACKET_DEFS[TYPE_ERROR] = namedtuple("ErrorPacket", [])
 PACKET_DEFS[TYPE_DISCONNECT] = namedtuple("DisconnectPacket", [])

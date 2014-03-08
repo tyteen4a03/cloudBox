@@ -30,9 +30,13 @@ class StateUpdatePacketHandler(BasePacketHandler):
         if len(packetData) == 3:
             for key in packetData[2]:
                 del self.parent.factory.clients[packetData[0]][key]
+        if len(packetData) > 2:
+            for key, value in packetData[1].iteritems():
+                self.parent.factory.clients[packetData[0]][key] = value
+        # Callback if needed
 
     def packData(self, packetData):
-        l = [packetData["clientID"]]
+        l = [packetData["sessionID"]]
         if packetData["clientState"]:
             # If we are not clearing the opposite side's data
             l.append(packetData["clientState"])

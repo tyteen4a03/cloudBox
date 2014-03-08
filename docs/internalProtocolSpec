@@ -10,7 +10,7 @@ StateRepository - A dictionary holding a player's state (information).
 
 0x00 - Keep Alive
 Two-way
-Used by: HubServer, WorldServer, DatabaseServer, WebServer
+Used by: HubServer, WorldServer, WebServer
 Direction: * <-> *
 
 Both ways
@@ -26,7 +26,7 @@ relevant cleanups.
 
 0x01 - Handshake
 Two-way
-Used by: HubServer, WorldServer, DatabaseServer, WebServer
+Used by: HubServer, WorldServer, WebServer
 Direction: Client -> Server, Server -> Client
 
 Client to Server
@@ -51,6 +51,10 @@ Handling of packet (Client to Server):
 When connection is made, client must send a Handshake packet, and wait for either a Disconnect packet, or a Handshake
 packet indicating successful handshaking.
 
+0x02 - Call result
+Two-way
+Used by: HubServer, WebServer, WorldServer
+Direction: * <-> *
 
 0x30 - State Update
 Two-way
@@ -59,8 +63,8 @@ Direction: * <-> *
 
 Both ways
 Packet Data:
-clientID: The client's player ID the sender wishes to update. Must be an integer.
-clientState: A dictionary of any state the sender wishes to update.
+clientID: The client's session ID the sender wishes to update. Must be an integer.
+clientState: A dictionary of any state the sender wishes to update. If omitted, delete all entries.
 keysToDelete: A list of any keys to delete. Optional.
 
 Handling of packet (Both Ways):

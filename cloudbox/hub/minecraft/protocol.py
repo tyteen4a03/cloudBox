@@ -41,6 +41,8 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         Called when a connection is made.
         """
+        self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers, self.transport)
+        self.loops.registerLoop("packets", self.gpp.packetTick).start(self.getTickInterval("minecraft"))
         # Get an ID for ourselves
         self.sessionID = self.factory.claimID(self)
         if self.sessionID is None:
@@ -48,7 +50,6 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
             return
         self.ip = IPAddress(self.transport.getPeer().host)
         self.logger = logging.getLogger("cloudbox.hub.mc.protocol.{}".format(self.sessionID))
-        self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers)
 
     def connectionLost(self, reason=_connDone):
         # Leave the world
@@ -66,15 +67,6 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         self.gpp.parseFirstPacket()
 
     ### Message Handling ###
-
-    def send(self, msg):
-        """
-        Sends raw data to the client.
-        """
-        self.transport.write(msg)
-
-    def sendPacket(self, packetID, packetData={}):
-        self.transport.write(self.gpp.packPacket(packetID, packetData))
 
     def sendError(self, error, disconnectNow=False):
         """
