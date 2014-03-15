@@ -8,7 +8,7 @@ from cloudbox.common.handlers import HandshakePacketHandler
 
 
 class HubHandshakePacketHandler(HandshakePacketHandler):
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         super(HubHandshakePacketHandler, self).handleData(packetData, 0)
         if packetData[1] == common.SERVER_TYPES["WorldServer"]:
             # See if they are on our allowed list

@@ -3,13 +3,11 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from cloudbox.common.peewee import *
+from peewee import *
+
+databaseProxy = Proxy()
 
 
 class BaseModel(Model):
-    class Meta:
-        database = database
-
-
-class WorldModel(TablePrefixDBObject):
-    pass
+    class Meta():
+        database = databaseProxy

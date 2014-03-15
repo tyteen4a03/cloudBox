@@ -37,7 +37,7 @@ class HandshakePacketHandler(BasePacketHandler):
     """
     packetID = handlers.TYPE_HANDSHAKE
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         # See if they are in our allowed list
         if not self.parent.transport.getPeer().host in self.parent.factory.settings["main"]["allowed-ips"]:
             # Refuse connection
@@ -47,7 +47,9 @@ class HandshakePacketHandler(BasePacketHandler):
             # Who are you?
             self.parent.sendError("Server type undefined.")
             self.parent.transport.loseConnection()
+        self.logger.info("Received handshake from {}: {} with serverType {}".format(self.parent.transport.getPeer().host, packetData[0], packetData[1]))
         # The rest of the operations are carried out by the classes that subclass us
+
 
     def packData(self, packetData):
         return [
@@ -62,7 +64,7 @@ class CallbackPacketHandler(BasePacketHandler):
     """
     packetID = handlers.TYPE_CALLBACK
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         # Try to locate the request
         request = self.gpp.requests[requestID]
         if packetData[0]: # Success!
@@ -76,13 +78,14 @@ class CallbackPacketHandler(BasePacketHandler):
             packetData["data"]
         ]
 
+
 class DisconnectPacketHandler(BasePacketHandler):
     """
     A Handler class for Server Shutdown.
     """
     packetID = handlers.TYPE_HANDSHAKE
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         # TODO ErrorID
         self.logger.info("{} closed connection, reason: {}".format(
             common.SERVER_TYPES_INV[packetData[0]], packetData[3]))

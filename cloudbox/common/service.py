@@ -12,11 +12,15 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+from peewee import SqliteDatabase, MySQLDatabase, PostgresqlDatabase
 from twisted.enterprise.adbapi import ConnectionPool
 from twisted.python.failure import Failure
 
-from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.constants.common import *
+from cloudbox.common.database import checkForFailure
+from cloudbox.common.loops import LoopRegistry
+from cloudbox.common.models import databaseProxy
+from cloudbox.common.models.servers import GlobalMetadata
 
 
 class CloudBoxService(object):
@@ -85,25 +89,41 @@ class CloudBoxService(object):
             self.stop()
         if self.settings["common"]["db"]["driver"] == "sqlite3":
             connKwargs["database"] = self.settings["common"]["db"]["driver-config"]["file"]
+            databaseProxy.initialize(SqliteDatabase(None))
         # TODO Implement
         elif self.settings["common"]["db"]["driver"] == "txmysql":
             connKwargs = {}
+            databaseProxy.initialize(MySQLDatabase(None))
         elif self.settings["common"]["db"]["driver"] == "txpostgres":
             connKwargs = {}
-        elif self.settings["common"]["db"]["driver"] == "mysql-python":
-            connKwargs = {}
+            databaseProxy.initialize(PostgresqlDatabase(None))
+        elif self.settings["common"]["db"]["driver"] == "MySQLdb":
+            from MySQLdb.cursors import DictCursor
+            connKwargs = {
+                "host": self.settings["common"]["db"]["driver-config"]["server-ip"],
+                "db": self.settings["common"]["db"]["driver-config"]["database"],
+                "user": self.settings["common"]["db"]["driver-config"]["username"],
+                "passwd": self.settings["common"]["db"]["driver-config"]["password"],
+                "cursorclass": DictCursor
+            }
+            databaseProxy.initialize(MySQLDatabase(None))
         elif self.settings["common"]["db"]["driver"] == "psycopg2":
             connKwargs = {}
+            databaseProxy.initialize(PostgresqlDatabase(None))
         self.db = ConnectionPool(self.settings["common"]["db"]["driver"], *connArgs, **connKwargs)
         # Perform basic validation check
+        self.logger.info(GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql())
         self.db.runQuery('SELECT value FROM cb_global_metadata WHERE name="databaseVersion"').addBoth(self.checkTablesCallabck)
 
     def checkTablesCallabck(self, res):
+        checkForFailure(res)
         if isinstance(res, Failure):
-            self.logger.critical("Database validation check failed: Error occured.")
-            self.logger.critical(res.getTraceback())
             self.stop()
-        elif int(res[0][0]) != VERSION_NUMBER:
+        elif not res:
+            self.logger.critical("Database validation chck failed: databaseVersion row not found in cb_global_metadata.")
+            self.logger.critical("Maybe the database is corrupt?")
+            self.stop()
+        elif int(res[0]["value"]) != VERSION_NUMBER:
             self.logger.critical("Database validation check failed: Database version and software version mismatch.")
             self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0][0]))
             self.stop()

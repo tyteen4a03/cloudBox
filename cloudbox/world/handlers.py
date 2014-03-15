@@ -10,7 +10,7 @@ from cloudbox.common.handlers import HandshakePacketHandler
 
 
 class WorldHandshakePacketHandler(HandshakePacketHandler):
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         super(WorldHandshakePacketHandler, self).handleData(packetData, requestID)
         if packetData[1] == common.SERVER_TYPES["HubServer"]:
             # OK, connection established
@@ -21,7 +21,7 @@ class WorldHandshakePacketHandler(HandshakePacketHandler):
 class StateUpdatePacketHandler(BasePacketHandler):
     packetID = handlers.TYPE_STATE_UPDATE
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         if len(packetData) == 1:
             # Delete whatever we have
             del self.parent.factory.clients[packetData[0]]
@@ -34,6 +34,8 @@ class StateUpdatePacketHandler(BasePacketHandler):
             for key, value in packetData[1].iteritems():
                 self.parent.factory.clients[packetData[0]][key] = value
         # Callback if needed
+        if requestID > 0:
+            self.gpp.sendPacket(handlers.TYPE_CALLBACK, {"isSuccess": True})
 
     def packData(self, packetData):
         l = [packetData["sessionID"]]
@@ -48,7 +50,7 @@ class StateUpdatePacketHandler(BasePacketHandler):
 class LoadWorldPacketHandler(BasePacketHandler):
     packetID = handlers.TYPE_LOAD_WORLD
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         pass
 
     def packData(self, packetData):

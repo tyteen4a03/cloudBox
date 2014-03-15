@@ -26,7 +26,8 @@ class BaseMinecraftPacketHandler(BasePacketHandler):
     def unpackData(self, data):
         return TYPE_FORMATS[self.packetID].decode(data)
 
-    def getExpectedLength(self):
+    @property
+    def expectedLength(self):
         return len(TYPE_FORMATS[self.packetID])
 
 
@@ -36,7 +37,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_INITIAL
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         # Get the client's details
         protocol, self.parent.username, mppass, utype = packetData
         if self.parent.identified:
@@ -64,10 +65,12 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
         def gotBans(data):
             # Are they banned?
-            bans = data[2]
-            if bans:
-                self.parent.sendError("You are banned: %s" % bans[-1]["reason"])
+            if data:
+                self.parent.sendError("You are banned: %s" % data["reason"])
                 return
+            d1 = self.parent.factory.assignWorldServer()
+            d2 = self.parent.factory.db.runQuery("SELECT * FROM cb_users WHERE username=?")
+            dl = DeferredList([d1, d2])
 
         def gotData(data):
             # OK, see if there's anyone else with that username
@@ -104,8 +107,6 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
 
         self.parent.factory.getBans(self.parent.username, self.parent.ip).addCallback(gotBans)
-        d1 = self.parent.factory.assignWorldServer()
-        dl = DeferredList([d1, d2])
 
     def packData(self, packetData):
         return TYPE_FORMATS[TYPE_INITIAL].encode(packetData["protocolVersion"],
@@ -160,7 +161,7 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_BLOCKCHANGE
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         if self.parent.serverType == SERVER_TYPES["WorldServer"]:
             x, y, z, created, block = packetData
             if not self.parent.identified:
@@ -269,7 +270,7 @@ class PlayerPosPacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_PLAYERPOS
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         pass
 
     def packData(self, packetData):
@@ -302,7 +303,7 @@ class MessagePacketHandler(BaseMinecraftPacketHandler):
     """
     packetID = TYPE_MESSAGE
 
-    def handleData(self, packetData, requestID=0):
+    def handleData(self, packetData, requestID=None):
         pass
 
     def packData(self, packetData):

@@ -12,7 +12,7 @@ class IPacketHandler(Interface):
     """
     packetID = Attribute("The packetID this PacketHandler handles.")
 
-    def handleData(packetData):
+    def handleData(packetData, requestID):
         """
         Acts upon data.
         """
@@ -28,14 +28,11 @@ class IMinecraftPacketHandler(IPacketHandler):
     Interface for PacketHandlers for Minecraft packets.
     """
 
+    EXPECTED_LENGTH = Attribute("""The expected length of the packet.""")
+
     def unpackData(packetData):
         """
         Unpacks the data.
-        """
-
-    def getExpectedLength():
-        """
-        Returns the expected length of the packet.
         """
 
 

@@ -30,7 +30,7 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
         self.worldServers = {}
         self.logger = logging.getLogger("cloudbox.hub.world.factory")
         self.loops = LoopRegistry()
-        self.loops.registerLoop("tasks", self.setUpTaskLoop())
+        self.loops.registerLoop("tasks", self.taskLoop)
 
     def startFactory(self):
         self.handlers = self.buildHandlers()

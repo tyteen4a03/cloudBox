@@ -42,7 +42,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         Called when a connection is made.
         """
         self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers, self.transport)
-        self.loops.registerLoop("packets", self.gpp.packetTick).start(self.getTickInterval("minecraft"))
+        self.loops.registerLoop("packets", self.gpp.packetLoop).start(self.getTickInterval("minecraft"))
         # Get an ID for ourselves
         self.sessionID = self.factory.claimID(self)
         if self.sessionID is None:
@@ -146,7 +146,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
                     # WorldServer down, raise hell
                     raise WorldServerLinkException
                 # Send the player over
-                wsf.worldServers[row[3]].protoDoJoinServer(world=row[3])
+                wsf.worldServers[row[3]].protoDoJoinServer(self, row[3])
             self.db.runQuery("SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1")\
                 .addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
         elif mode == "distributed":

@@ -12,10 +12,10 @@ from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.loops import LoopRegistry
-from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.common.mixins import CloudBoxProtocolMixin, TickMixin
 
 
-class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
+class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
     """
     The protocol class for the WorldServer communicator factory.
     """
@@ -33,7 +33,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
         Triggered when connection is established.
         """
         self.gpp = MSGPackPacketProcessor(self, self.factory.handlers, self.transport)
-        self.loops.registerLoop("packets", self.setUpPacketLoop()).start(self.getTickInterval("outgoing-world"))
+        self.loops.registerLoop("packets", self.gpp.packetLoop).start(self.getTickInterval("outgoing-world"))
 
     def dataReceived(self, data):
         """
@@ -55,14 +55,15 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
 
     ### Packet functions ###
     def sendClientStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
-        self.sendPacket(TYPE_STATE_UPDATE,
-        {
-            "sessionID": sessionID,
-            "clientState": states,
-            "keysToDelete": keysToDelete
-        },
-
+        d = self.sendPacket(TYPE_STATE_UPDATE,
+            {
+                "sessionID": sessionID,
+                "clientState": states,
+                "keysToDelete": keysToDelete
+            },
         )
+        if requireResponse:
+            return d
 
     ### End-client related functions ###
 
@@ -70,12 +71,17 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         Makes the protocol join the server.
         """
-        toSend = ["playerID", "username", "ip"]
+        toSend = {
+            "playerID": proto.playerID,
+            "username": proto.username,
+            "ip": int(proto.ip),
+        }
+        if world:
+            toSend["world"] = world
         # Send the basic information over
-        self.sendClientStateUpdate(proto.sessionID, {
-            "playerID": proto.playerID
-        })
+        d = self.sendClientStateUpdate(proto.sessionID, toSend, True)
         self.logger.info("Sent request for {} to join worldServer {}".format(proto.username, self.wsID))
+        return d
 
     def protoDoLeaveServer(self, proto):
         """

@@ -58,8 +58,8 @@ class CloudBoxProtocolMixin(object):
     def db(self):
         return self.factory.db
 
-    def sendPacket(self, packetID, packetData={}, priority=5):
-        return self.gpp.sendPacket(packetID, packetData, priority)
+    def sendPacket(self, packetID, packetData={}, requestID=None, priority=5):
+        return self.gpp.sendPacket(packetID, packetData, requestID, priority)
 
     def getRequestsPerTick(self, entry):
         return self.factory.getRequestsPerTick(entry)
@@ -131,5 +131,6 @@ class TaskTickMixin(TickMixin):
                 except Queue.Empty:
                     break
 
-    def setUpTaskLoop(self):
+    @property
+    def taskLoop(self):
         return LoopingCall(self.taskTick)

@@ -10,10 +10,10 @@ from twisted.internet.task import LoopingCall
 
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.loops import LoopRegistry
-from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.common.mixins import CloudBoxProtocolMixin, TickMixin
 
 
-class WorldServerProtocol(Protocol, CloudBoxProtocolMixin):
+class WorldServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
     """
     I am a Protocol for the World Server.
     """
@@ -30,7 +30,7 @@ class WorldServerProtocol(Protocol, CloudBoxProtocolMixin):
     def connectionMade(self):
         self.factory.instance = self
         self.gpp = MSGPackPacketProcessor(self, self.factory.handlers, self.transport)
-        self.loops.registerLoop("packets", self.gpp.packetTick).start(self.getTickInterval("outgoing"))
+        self.loops.registerLoop("packets", self.gpp.packetLoop).start(self.getTickInterval("outgoing"))
         self.logger.info("Connecting to Hub Server...")
         self.sendHandshake()
         self.ready = True
