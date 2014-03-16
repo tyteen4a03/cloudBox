@@ -112,8 +112,7 @@ class CloudBoxService(object):
             databaseProxy.initialize(PostgresqlDatabase(None))
         self.db = ConnectionPool(self.settings["common"]["db"]["driver"], *connArgs, **connKwargs)
         # Perform basic validation check
-        self.logger.info(GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql())
-        self.db.runQuery('SELECT value FROM cb_global_metadata WHERE name="databaseVersion"').addBoth(self.checkTablesCallabck)
+        self.db.runQuery(GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql()).addBoth(self.checkTablesCallabck)
 
     def checkTablesCallabck(self, res):
         checkForFailure(res)
@@ -125,7 +124,7 @@ class CloudBoxService(object):
             self.stop()
         elif int(res[0]["value"]) != VERSION_NUMBER:
             self.logger.critical("Database validation check failed: Database version and software version mismatch.")
-            self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0][0]))
+            self.logger.critical("Software version: {softwareVersion}, Database version: {dbVersion}".format(softwareVersion=VERSION_NUMBER, dbVersion=res[0]["value"]))
             self.stop()
         else:
             self.logger.info("Database API ready.")

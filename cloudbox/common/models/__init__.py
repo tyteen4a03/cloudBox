@@ -5,7 +5,7 @@
 
 from peewee import *
 
-databaseProxy = Proxy()
+databaseProxy = Proxy()  # Modified by CloudBoxService
 
 
 class BaseModel(Model):

@@ -17,8 +17,10 @@ from cloudbox.common.constants.cpe import *
 from cloudbox.common.database import checkForFailure
 from cloudbox.common.exceptions import ErrorCodeException
 from cloudbox.common.loops import LoopRegistry
-from cloudbox.common.minecraft.handlers import classic, cpe
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
+from cloudbox.common.models.servers import WorldServer
+from cloudbox.common.models.user import Bans, User, UserIP
+from cloudbox.common.models.world import World
 from cloudbox.hub.exceptions import WorldServerLinkException
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
@@ -103,17 +105,16 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             proto.worldServer = wsProto
 
         def gotWorldServer(res):
+            checkForFailure(res)
             if not res:
                 raise ErrorCodeException(ERRORS["no_results"])
-            ws = res[0][0]
+            ws = res[0]["worldServerID"]
             if ws not in self.getFactory("WorldServerCommServerFactory").worldServers:
                 raise WorldServerLinkException(ERRORS["worldserver_link_not_established"])
             wsProto = self.getFactory("WorldServerCommServerFactory").worldServers[ws]
             return wsProto.protoDoJoinServer(proto, world).addCallback(afterAddedNewClient, wsProto)
 
-        return self.db.runQuery("""SELECT worldServerID FROM cb_worlds
-                                 WHERE name = ?""",
-                                 world).addCallback(gotWorldServer)
+        return self.db.runQuery(World.select(World.worldServerID).where(World.name == world).sql()).addBoth(gotWorldServer)
 
     def buildUsernameList(self, wsID=None):
         """
@@ -139,27 +140,48 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         """
         assert not (username is None and ip is None)
 
+        def afterGetUser(res):
+            checkForFailure(res)
+            if not res:  # First time user
+                return []
+            return self.db.runQuery(Bans.select().where(Bans.type == BAN_TYPES["globalBan"] & Bans.username == res[0]["username"]).sql()).addBoth(afterGetBans, username)
+
+        def afterGetIP(res):
+            checkForFailure(res)
+            if not res:  # First time visitor
+                return []
+            return self.db.runQuery(Bans.select().where(Bans.type == BAN_TYPES["globalIPBan"] & Bans.recordID == res[0]["id"])).addBoth(afterGetBans, str(ip))
+
         def afterGetBans(res, lookupEntity):
             checkForFailure(res)
-            if len(res) > 1:
+            if not res:
+                return []
+            elif len(res) > 1:
                 # More than one record...
                 self.logger.warn("Multiple global ban detected for lookup entity {}.", lookupEntity)
-            elif len(res) == 0:
-                return res
             return res[0]
 
         if username and ip is None:
-            return self.db.runQuery("SELECT * FROM cb_bans WHERE username=? AND type=0", username).addCallback(afterGetBans, username)
+            # We need the user id first
+            return self.db.runQuery(User.select(User.id).where(User.username == username).sql()).addBoth(afterGetUser)
         elif ip and username is None:
-            # We need the IP id first:
+            # We need the IP id first
             if not isinstance(ip, IPAddress):
                 ip = IPAddress(ip)
 
-            def afterGotIP(res):
-                checkForFailure(res)
-                return self.db.runQuery("SELECT * FROM cb_bans WHERE IPid=? AND type=0", res[0][0])
-            return self.db.runQuery("SELECT id FROM cb_user_ip WHERE ip=?", int(ip)).addCallback(afterGotIP).addCallback(afterGetBans, str(ip))
+            return self.db.runQuery(UserIP.select(UserIP.id).where(UserIP.ip == int(ip))).addBoth(afterGetIP)
         # TODO
         #elif ip and username:
+
+    def getUser(self, username=None, userID=None):
+        """
+        Fetches the user record for database population. Specify either username or userID, not both!
+        @param username The username to query for.
+        @param userID The userID to query for.
+        @return tuple The user record.
+        """
+        assert not (username is None and userID is None)
+        assert not (username and userID)
+
 
     ### Handler methods ###

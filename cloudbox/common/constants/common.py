@@ -92,18 +92,31 @@ COLOUR_YELLOW = "&e"
 COLOUR_WHITE = "&f"
 
 SERVICES = {
-    0: "Minecraft.net",
-    1: "ClassiCube"
+    "Minecraft.net": 0,
+    "ClassiCube": 1,
 }
+
+SERVICES_INV = dict((v, k) for k, v in SERVICES.iteritems())
 
 ACTIONS = {
-    0: "login",
-    1: "logout",
-    2: "register",
-    3: "verfifyEmail",
-    4: "associate",
-    5: "editProfile",  # Edit self
-    6: "editWorld",
-    7: "editUser",  # Edit other
+    "login": 0,
+    "logout": 1,
+    "register": 2,
+    "verifyEmail": 3,
+    "associate": 4,
+    "editProfile": 5,  # Edit self
+    "editWorld": 6,
+    "editUser": 7,  # Edit others
+    "ban": 8,
 }
 
+ACTIONS_INV = dict((v, k) for k, v in ACTIONS.iteritems())
+
+BAN_TYPES = {
+    "globalBan": 0,
+    "globalIPBan": 1,
+    "worldBan": 2,
+    "worldIPBan": 3
+}
+
+BAN_TYPES_INV = dict((v, k) for k, v in BAN_TYPES.iteritems())

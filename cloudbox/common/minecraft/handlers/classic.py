@@ -106,7 +106,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             })
             self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
 
-        self.parent.factory.getBans(self.parent.username, self.parent.ip).addCallback(gotBans)
+        self.parent.factory.getBans(self.parent.username, self.parent.ip).addBoth(gotBans)
 
     def packData(self, packetData):
         return TYPE_FORMATS[TYPE_INITIAL].encode(packetData["protocolVersion"],
