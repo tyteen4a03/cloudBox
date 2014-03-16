@@ -173,15 +173,20 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         # TODO
         #elif ip and username:
 
-    def getUser(self, username=None, userID=None):
+    def getUserByUsername(self, username):
         """
-        Fetches the user record for database population. Specify either username or userID, not both!
+        Fetches the user record given an username.
         @param username The username to query for.
-        @param userID The userID to query for.
         @return tuple The user record.
         """
-        assert not (username is None and userID is None)
-        assert not (username and userID)
+        return self.db.runQuery(User.select().where(User.username == username).sql())
 
+    def getUserByUserID(self, userID):
+        """
+        Fetches the user record given an user.
+        @param userID The user ID to query for.
+        @return tuple The user record.
+        """
+        return self.db.runQuery(User.select().where(User.id == userID).sql())
 
     ### Handler methods ###
