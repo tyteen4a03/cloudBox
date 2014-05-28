@@ -98,11 +98,12 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
     def assignWorldServer(self, proto, world=None):
         if not world:
             world = "default"  # TODO Link to settings
-        assert proto.worldServer is None, "Tried to reassign already assigned client."
+        assert proto.wsID is None, "Tried to reassign already assigned client."
 
         def afterAddedNewClient(wsProto):
             # Confirm the assginment
-            proto.worldServer = wsProto
+            proto.wsID = wsProto.wsID
+            self.logger.log(wsID)
 
         def gotWorldServer(res):
             checkForFailure(res)
@@ -114,7 +115,12 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             wsProto = self.getFactory("WorldServerCommServerFactory").worldServers[ws]
             return wsProto.protoDoJoinServer(proto, world).addCallback(afterAddedNewClient, wsProto)
 
-        return self.db.runQuery(World.select(World.worldServerID).where(World.name == world).sql()).addBoth(gotWorldServer)
+        return self.db.runQuery(
+            *World.select(World.worldServerID).where(World.name == world).sql()
+        ).addBoth(gotWorldServer)
+
+    def leaveWorldServer(self, proto):
+        pass
 
     def buildUsernameList(self, wsID=None):
         """
@@ -131,6 +137,8 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
                     theList[cEntry["username"].lower()] = cEntry["protocol"]
         return theList
 
+    ### DB query methods (to be tidied up and moved back to models) ###
+
     def getBans(self, username=None, ip=None):
         """
         Fetches the ban information using the information given - username, IP, or both.
@@ -144,13 +152,13 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             checkForFailure(res)
             if not res:  # First time user
                 return []
-            return self.db.runQuery(Bans.select().where(Bans.type == BAN_TYPES["globalBan"] & Bans.username == res[0]["username"]).sql()).addBoth(afterGetBans, username)
+            return self.db.runQuery(*Bans.select().where(Bans.type == BAN_TYPES["globalBan"] & Bans.username == res[0]["username"]).sql()).addBoth(afterGetBans, username)
 
         def afterGetIP(res):
             checkForFailure(res)
             if not res:  # First time visitor
                 return []
-            return self.db.runQuery(Bans.select().where(Bans.type == BAN_TYPES["globalIPBan"] & Bans.recordID == res[0]["id"])).addBoth(afterGetBans, str(ip))
+            return self.db.runQuery(*Bans.select().where(Bans.type == BAN_TYPES["globalIPBan"] & Bans.recordID == res[0]["id"])).addBoth(afterGetBans, str(ip))
 
         def afterGetBans(res, lookupEntity):
             checkForFailure(res)
@@ -160,18 +168,20 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
                 # More than one record...
                 self.logger.warn("Multiple global ban detected for lookup entity {}.", lookupEntity)
             return res[0]
-
+        self.logger.info(username)
+        self.logger.info(ip)
         if username and ip is None:
             # We need the user id first
-            return self.db.runQuery(User.select(User.id).where(User.username == username).sql()).addBoth(afterGetUser)
+            return self.db.runQuery(*User.select(User.id).where(User.username == username).sql()).addBoth(afterGetUser)
         elif ip and username is None:
             # We need the IP id first
             if not isinstance(ip, IPAddress):
                 ip = IPAddress(ip)
 
-            return self.db.runQuery(UserIP.select(UserIP.id).where(UserIP.ip == int(ip))).addBoth(afterGetIP)
+            return self.db.runQuery(*UserIP.select(UserIP.id).where(UserIP.ip == int(ip)).sql()).addBoth(afterGetIP)
         # TODO
         #elif ip and username:
+        return []
 
     def getUserByUsername(self, username):
         """
@@ -179,7 +189,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         @param username The username to query for.
         @return tuple The user record.
         """
-        return self.db.runQuery(User.select().where(User.username == username).sql())
+        return self.db.runQuery(*User.select().where(User.username == username).sql())
 
     def getUserByUserID(self, userID):
         """
@@ -187,6 +197,6 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         @param userID The user ID to query for.
         @return tuple The user record.
         """
-        return self.db.runQuery(User.select().where(User.id == userID).sql())
+        return self.db.runQuery(*User.select().where(User.id == userID).sql())
 
     ### Handler methods ###

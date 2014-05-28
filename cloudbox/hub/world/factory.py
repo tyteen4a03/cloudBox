@@ -12,6 +12,7 @@ from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
+from cloudbox.common.models.world import World
 from cloudbox.hub.world.protocol import WorldServerCommServerProtocol
 
 
@@ -53,7 +54,7 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
         return dL
 
     def getWorldServerByWorldName(self, worldName):
-        return self.db.runQuery("SELECT worldServerID FROM cb_worlds WHERE worldName = ?", worldName)
+        return self.db.runQuery(*World.select(World.worldServerID).where(World.name == worldName).sql())
 
     # TODO Reuse this POS - What was I even thinking?
     def getOnlineWorldServerByWorldName(self, worldName):
@@ -67,11 +68,10 @@ class WorldServerCommServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTick
             return finalList
         return self.getWorldServerByWorldName(worldName).addCallback(cb)
 
-
-    def leaveWorldServer(self, proto, wsID):
+    def leaveWorldServer(self, proto):
         """
         Leaves the current world server.
         """
-        if not self.worldServers.has_key(wsID):
+        if not self.worldServers.has_key(proto.wsID):
             raise KeyError("World server ID does not exist or is detached")
-        self.worldServers[wsID].doLeaveServer(proto)
+        self.worldServers[proto.wsID].doLeaveServer(proto)

@@ -4,7 +4,7 @@
 # cloudBox Package.
 
 
-class ErrorCodeException(Exception):
+class ErrorCodeException(BaseException):
     """
     An exception with an error code and optionally an error message.
     """
@@ -16,6 +16,10 @@ class ErrorCodeException(Exception):
         self.errorMessage = errorMessage
 
     def __repr__(self):
-        return "Error {1}: {2}".format(self.errorCode, self.errorMessage)
+        return "Error {}: {}".format(self.errorCode, self.errorMessage)
 
     __str__ = __repr__
+
+
+class DatabaseServerLinkException(ErrorCodeException):
+    pass

@@ -9,7 +9,7 @@ from cloudbox.common.models import BaseModel
 
 
 class GlobalMetadata(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_global_metadata"
 
     id = PrimaryKeyField()
@@ -19,12 +19,12 @@ class GlobalMetadata(BaseModel):
 
 
 class Server(BaseModel):
+    class Meta:
+        db_table = "cb_servers"
     id = PrimaryKeyField()
     name = CharField()
-    value = TextField()
-    defaultValue = TextField()
 
 
 class WorldServer(Server):
-    class Meta():
+    class Meta:
         db_table = "cb_worldservers"

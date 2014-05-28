@@ -4,7 +4,9 @@
 # cloudBox Package.
 
 from cloudbox.common.constants import common
+from cloudbox.common.database import checkForFailure
 from cloudbox.common.handlers import HandshakePacketHandler
+from cloudbox.common.models.servers import WorldServer
 
 
 class HubHandshakePacketHandler(HandshakePacketHandler):
@@ -14,5 +16,16 @@ class HubHandshakePacketHandler(HandshakePacketHandler):
             # See if they are on our allowed list
             if self.parent.transport.getPeer().host not in self.parent.factory.settings["main"]["allowed-ips"]:
                 self.parent.sendError("IP not in allowed list. Check config?")
-            self.parent.sendHandshake()
-            self.parent.connectionEstablished = True
+
+            # Get the worldServerID from the database
+            def afterGetWSID(res):
+                checkForFailure(res)
+                if not res:
+                    raise
+                self.parent.factory.worldServers[res[0]["id"]] = self.parent
+                self.parent.sendHandshake()
+                self.parent.connectionEstablished = True
+
+            self.parent.db.runQuery(
+                *WorldServer.select().where(WorldServer.name == packetData[0]).sql()
+            ).addBoth(afterGetWSID)

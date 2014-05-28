@@ -4,14 +4,19 @@
 # cloudBox Package.
 
 import hashlib
+import time
 
+from twisted.internet.defer import DeferredList, Deferred
 from twisted.internet.task import LoopingCall
 from zope.interface import implements
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.classic import *
+from cloudbox.common.database import checkForFailure
+from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.handlers import BasePacketHandler
 from cloudbox.common.interfaces import IMinecraftPacketHandler
+from cloudbox.common.models.user import User, UserGroupUserAssoc, UserServiceAssoc
 from cloudbox.common.util import packString
 
 
@@ -39,10 +44,10 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
     def handleData(self, packetData, requestID=None):
         # Get the client's details
-        protocol, self.parent.username, mppass, utype = packetData
+        protocol, self.parent.player.username, mppass, utype = packetData
         if self.parent.identified:
             # Sent two login packets - I wonder why?
-            self.parent.factory.logger.info("Kicked '%s'; already logged in to server" % self.parent.username)
+            self.parent.factory.logger.info("Kicked '%s'; already logged in to server" % self.parent.player.username)
             self.parent.sendError("You already logged in!")
 
         # Right protocol?
@@ -52,45 +57,60 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
         # Check their password
         expectedPassword = hashlib.md5(self.parent.factory.settings["main"]["salt"] +
-                                       self.parent.username).hexdigest()[-32:].strip("0")
+                                       self.parent.player["username"]).hexdigest()[-32:].strip("0")
         mppass = mppass.strip("0")
         # TODO: Rework this - possibly limit to localhost only?
         #if not self.parent.transport.getHost().host.split(".")[0:2] == self.parent.ip.split(".")[0:2]:
         if mppass != expectedPassword:
             self.parent.factory.logger.info(
-                "Kicked '%s'; invalid password (%s, %s)" % (self.parent.username, mppass, expectedPassword))
+                "Kicked '%s'; invalid password (%s, %s)" % (self.parent.player["username"], mppass, expectedPassword))
             self.parent.sendError("Incorrect authentication, please try again.")
             return
         #value = self.parent.factory.runHook("prePlayerConnect", {"client": self})
 
-        def gotBans(data):
-            # Are they banned?
-            if data:
-                self.parent.sendError("You are banned: %s" % data["reason"])
-                return
-            d1 = self.parent.factory.assignWorldServer()
-            d2 = self.parent.factory.db.runQuery("SELECT * FROM cb_users WHERE username=?")
-            dl = DeferredList([d1, d2])
+        def populateData(res):
+            failed = checkForFailure(res)
 
-        def gotData(data):
-            # OK, see if there's anyone else with that username
-            usernameList = self.parent.factory.buildUsernameList()
-            if self.parent.username.lower() in usernameList:
-                # Kick the other guy out
-                self.parent.factory.clients[usernameList[self.parent.username.lower()].id]["protocol"].sendError(
-                    "You logged in on another computer.", disconnectNow=True)
-                return
+            def actuallyPopulateData(theRes):
+                failed = checkForFailure(theRes)
+                if failed:
+                    self.parent.sendError("The server is currently not available. Please try again later.")
+                    raise DatabaseServerLinkException(ERRORS["data_corrupt"])
+                for key, value in u:
+                    self.parent.player["key"] = value
 
-            # All check complete. Request World Server to prepare level
-            self.parent.identified = True
-            self.parent.factory.clients[self.parent.sessionID]["username"] = self.parent.username
-            self.parent.factory.assignWorldServer(data["parent"])
+            if not res:
+                # User not found, populate with default variables
+                u = User.create(
+                    id=uuid.uuid5(UUID["cloudbox.users"], self.parent.player["username"]),
+                    username=self.parent.player["username"],
+                    firstseen=time.time(),
+                    lastseen=time.time(),
+                )
+
+                def step2(theRes):
+                    failed = checkForFailure(theRes)
+                    if failed:
+                        self.parent.sendError("The server is currently not available. Please try again later.")
+                        raise DatabaseServerLinkException(ERRORS["data_corrupt"])
+                    self.parent.db.runQuery(*UserServiceAssoc.create(
+                        id=theRes,
+                        service=1,  # Right now force ClassiCube
+                        verified=1,  # Of course we're verified
+                    ).sql()).addCallback(actuallyPopulateData)
+
+                self.parent.db.runQuery(*u.sql()).addBoth(step2)
+            else:
+                # User found. Populate
+                self.parent.db.runQuery(*User.select().where(User.id == res).sql()).addBoth(actuallyPopulateData)
+
+        def afterAssignedWorldServer(res):
+            self.logger.info(res)
             self.parent.joinDefaultWorld()
-
             # Announce our presence
-            self.parent.factory.logger.info("Connected, as '%s'" % self.parent.username)
+            self.parent.factory.logger.info("Connected, as '%s'" % self.parent.player["username"])
             #for client in self.parent.factory.usernames.values():
-            #    client.sendServerMessage("%s has come online." % self.parent.username)
+            #    client.sendServerMessage("%s has come online." % self.parent.player["username"])
 
             # Send them back our info.
             # TODO: CPE
@@ -106,7 +126,31 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             })
             self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
 
-        self.parent.factory.getBans(self.parent.username, self.parent.ip).addBoth(gotBans)
+        def gotData(results):
+            # OK, see if there's anyone else with that username
+            usernameList = self.parent.factory.buildUsernameList()
+            if self.parent.player["username"].lower() in usernameList:
+                # Kick the other guy out
+                self.parent.factory.clients[usernameList[self.parent.player["username"].lower()].id]["protocol"].sendError(
+                    "You logged in on another computer.", disconnectNow=True)
+                return
+
+            # All check complete. Request World Server to prepare level
+            self.parent.identified = True
+            self.parent.factory.assignWorldServer(self.parent, world="default").addBoth(afterAssignedWorldServer)
+
+        def gotBans(data):
+            # Are they banned?
+            if data:
+                self.parent.sendError("You are banned: %s" % data["reason"])
+                return
+            self.parent.factory.getUserByUsername(self.parent.player["username"]).addBoth(populateData).addBoth(gotData)
+
+        returned = self.parent.factory.getBans(self.parent.player["username"])
+        if isinstance(returned, Deferred):
+            returned.addBoth(gotBans)
+        else:
+            gotBans(returned)
 
     def packData(self, packetData):
         return TYPE_FORMATS[TYPE_INITIAL].encode(packetData["protocolVersion"],
@@ -171,12 +215,12 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
                 return
             if block == 255:
                 # Who sends 255 anyway?
-                self.parent.factory.logger.debug("%s sent block 255 as 0" % self.parent.username)
+                self.parent.factory.logger.debug("%s sent block 255 as 0" % self.parent.player["username"])
                 block = 0
             # Check if out of block range or placing invalid blocks
             if block not in BLOCKS.keys() or block in [BLOCKS_BY_NAME["water"], BLOCKS_BY_NAME["lava"]]:
                 self.parent.factory.logger.info("Kicked '%s' (IP %s); Tried to place invalid block %s" % (
-                                        self.parent.username, self.parent.ip, block))
+                                        self.parent.player["username"], self.parent.ip, block))
                 self.parent.sendError("Invalid blocks are not allowed!")
                 return
             # TODO Permission Manager
@@ -188,7 +232,7 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
             # If we're read-only, reverse the change
                 allowBuilding = self.parent.factory.runHook(
                     "onBlockClick",
-                    {"x": x, "y": y, "z": z, "block": block, "client": data["parent"]}
+                    {"x": x, "y": y, "z": z, "block": block, "client": self.parent}
                 )
                 if not allowBuilding:
                     self.parent.sendBlock(x, y, z)
@@ -202,19 +246,19 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
                     block = 0
                 # Pre-hook, for stuff like /paint
                 new_block = self.parent.factory.runHook("preBlockChange",
-                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": data["parent"]})
+                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": self.parent})
                 if new_block is not None:
                     block = new_block
                     overridden = True
                 # Block detection hook that does not accept any parameters
                 self.parent.factory.runHook(
                     "blockDetect",
-                    {"x": x, "y": y, "z": z, "block": block, "client": data["parent"]}
+                    {"x": x, "y": y, "z": z, "block": block, "client": self.parent}
                 )
                 # Call hooks
                 new_block = self.parent.factory.runHook(
                     "blockChange",
-                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": data["parent"]}
+                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": self.parent}
                 )
                 if new_block is False:
                     # They weren't allowed to build here!

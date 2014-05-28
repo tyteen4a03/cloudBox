@@ -4,7 +4,7 @@ from cloudbox.common.models import BaseModel
 
 
 class User(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_users"
         order_by = ("id", "username")
 
@@ -19,7 +19,7 @@ class User(BaseModel):
 
 
 class UserGroup(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_user_groups"
         order_by = ("id",)
 
@@ -29,20 +29,30 @@ class UserGroup(BaseModel):
 
 
 class UserGroupUserAssoc(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_user_group_user_assoc"
 
     id = PrimaryKeyField()
-    userID = ForeignKeyField(User)
-    groupID = ForeignKeyField(UserGroup)
+    userID = ForeignKeyField(User, db_column="userID")
+    groupID = ForeignKeyField(UserGroup, db_column="groupID")
+
+
+class UserServiceAssoc(BaseModel):
+    class Meta:
+        db_table = "cb_user_service_assoc"
+
+    id = PrimaryKeyField()
+    userID = ForeignKeyField(User, db_column="userID")
+    service = IntegerField()
+    verified = BooleanField()
 
 
 class UserIP(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_user_ip"
 
     id = PrimaryKeyField()
-    userID = ForeignKeyField(User)
+    userID = ForeignKeyField(User, db_column="userID")
     logDate = TimeField()
     ip = BlobField()
     action = IntegerField()
@@ -51,13 +61,13 @@ class UserIP(BaseModel):
 
 
 class Bans(BaseModel):
-    class Meta():
+    class Meta:
         db_table = "cb_bans"
         order_by = ("userID",)
 
     id = PrimaryKeyField()
-    userID = ForeignKeyField(User)
-    bannerUserID = ForeignKeyField(User)
+    userID = IntegerField()
+    bannerUserID = ForeignKeyField(User, db_column="bannedUserID")
     type = IntegerField()
     recordID = IntegerField()
     startTime = IntegerField()

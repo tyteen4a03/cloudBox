@@ -13,11 +13,11 @@ except ImportError:
     from yaml import Loader, Dumper
 
 from peewee import SqliteDatabase, MySQLDatabase, PostgresqlDatabase
-from twisted.enterprise.adbapi import ConnectionPool
+from pubsub import pub
 from twisted.python.failure import Failure
 
 from cloudbox.common.constants.common import *
-from cloudbox.common.database import checkForFailure
+from cloudbox.common.database import checkForFailure, ConnectionPool
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.models import databaseProxy
 from cloudbox.common.models.servers import GlobalMetadata
@@ -112,14 +112,14 @@ class CloudBoxService(object):
             databaseProxy.initialize(PostgresqlDatabase(None))
         self.db = ConnectionPool(self.settings["common"]["db"]["driver"], *connArgs, **connKwargs)
         # Perform basic validation check
-        self.db.runQuery(GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql()).addBoth(self.checkTablesCallabck)
+        self.db.runQuery(*GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql()).addBoth(self.checkTablesCallabck)
 
     def checkTablesCallabck(self, res):
         checkForFailure(res)
         if isinstance(res, Failure):
             self.stop()
         elif not res:
-            self.logger.critical("Database validation chck failed: databaseVersion row not found in cb_global_metadata.")
+            self.logger.critical("Database validation check failed: databaseVersion row not found in cb_global_metadata.")
             self.logger.critical("Maybe the database is corrupt?")
             self.stop()
         elif int(res[0]["value"]) != VERSION_NUMBER:
@@ -128,6 +128,8 @@ class CloudBoxService(object):
             self.stop()
         else:
             self.logger.info("Database API ready.")
+            pub.sendMessage("cloudbox.common.service.databaseAPIReady")
+
 
     def start(self):
         """

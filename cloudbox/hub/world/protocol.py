@@ -24,7 +24,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
     PACKET_LIMIT_NAME = "outgoing-world"
 
     def __init__(self):
-        self.wsID = None
+        self.id = None
         self.logger = logging.getLogger("cloudbox.hub.world.protocol._default") # Will be replaced when we get a proper ID
         self.loops = LoopRegistry()
 
@@ -54,7 +54,7 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
         }
 
     ### Packet functions ###
-    def sendClientStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
+    def sendStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
         d = self.sendPacket(TYPE_STATE_UPDATE,
             {
                 "sessionID": sessionID,
@@ -71,16 +71,9 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
         """
         Makes the protocol join the server.
         """
-        toSend = {
-            "playerID": proto.playerID,
-            "username": proto.username,
-            "ip": int(proto.ip),
-        }
-        if world:
-            toSend["world"] = world
         # Send the basic information over
-        d = self.sendClientStateUpdate(proto.sessionID, toSend, True)
-        self.logger.info("Sent request for {} to join worldServer {}".format(proto.username, self.wsID))
+        d = self.sendStateUpdate(proto.sessionID, proto.player, requireResponse=True)
+        self.logger.info("Sent request for {} to join worldServer {}".format(proto.player["username"], self.id))
         return d
 
     def protoDoLeaveServer(self, proto):

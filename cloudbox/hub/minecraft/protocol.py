@@ -11,9 +11,12 @@ from twisted.internet.protocol import Protocol, connectionDone as _connDone
 
 from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.common import *
+from cloudbox.common.database import checkForFailure
 from cloudbox.common.gpp import MinecraftClassicPacketProcessor
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxProtocolMixin
+from cloudbox.common.models.world import World
+from cloudbox.common.player import Player
 from cloudbox.hub.exceptions import WorldServerLinkException
 
 
@@ -25,14 +28,12 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
     PACKET_LIMIT_NAME = "outgoing-minecraft"
 
     def __init__(self):
-        self.playerID = None # UID, stored in DB
-        self.sessionID = None # Session ID, used to communicate between client and server
+        self.player = Player()
+        self.sessionID = None  # Session ID, used to communicate between client and server
         self.ip = None
         self.gpp = None
-        self.username = None
         self.wsID = None  # World Server this user belongs to
         self.identified = False
-        self.state = {}  # A special dict used to hold temporary "signals"
         self.logger = logging.getLogger("cloudbox.hub.mc.protocol._default") # This will be replaced once we get a proper ID
 
     ### Twisted Methods ###
@@ -49,13 +50,19 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
             self.sendError("The server is full.")
             return
         self.ip = IPAddress(self.transport.getPeer().host)
+        self.player["ip"] = str(self.ip)  # Everything in self.player needs to be primitive types
+
         self.logger = logging.getLogger("cloudbox.hub.mc.protocol.{}".format(self.sessionID))
 
     def connectionLost(self, reason=_connDone):
         # Leave the world
-        self.factory.leaveWorldServer(self, self.wsID)
+        self.leaveWorldServer(
+
+        )
         # Release our ID
         self.factory.releaseID(self.sessionID)
+        # Stop the loops
+        self.loops.stopAll()
 
     def dataReceived(self, data):
         """
@@ -125,7 +132,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         Callback for when world joining failed
         """
-        if self.world is None:  # We are newbies
+        if "world" not in self.player.keys() or self.player["world"] is None:  # We are newbies
             self.sendError("World loading failed - {}".format(str(err)))
         else:
             self.sendServerMessage("World loading failed - {}".format(str(err)))
@@ -139,16 +146,19 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         if mode == "solo":
             # Find out which WS has the default world and join it
             def afterGetDefaultWorld(res):
-                row = res.fetch_row()
+                checkForFailure(res)
+                if not res:
+                    raise
                 wsf = self.factory.getFactory("WorldServerCommServerFactory")
                 # Get world server link
-                if row[3] not in wsf.worldServers:
+                if res[0]["id"] not in wsf.worldServers:
                     # WorldServer down, raise hell
-                    raise WorldServerLinkException
+                    raise WorldServerLinkException(200, "World server link not established")
                 # Send the player over
-                wsf.worldServers[row[3]].protoDoJoinServer(self, row[3])
-            self.db.runQuery("SELECT worldName, worldID, worldPath, wsID FROM cb_worlds WHERE isDefault=1")\
-                .addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
+                wsf.worldServers[res[0]["id"]].protoDoJoinServer(self, res[0]["id"])
+            return self.db.runQuery(
+                *World.select(World.name, World.id, World.filePath, World.worldServerID).where(World.isDefault == 1).sql()
+            ).addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
         elif mode == "distributed":
             # Find out which WS has the default world and join any of them.
             self.otherThings()
@@ -159,8 +169,8 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         pass
 
-    def leaveWorldServer(self, wsID):
+    def leaveWorldServer(self):
         """
         Leaves the current worldServer.
         """
-        self.getFactory("WorldServerCommServerFactory").leaveWorldServer(self, wsID)
+        self.getFactory("WorldServerCommServerFactory").leaveWorldServer(self)

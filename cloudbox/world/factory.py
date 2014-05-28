@@ -28,6 +28,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         self.logger = logging.getLogger("cloudbox.world.factory")
         self.worlds = []
         self.clients = {}  # {clientID: clientStates} - clientID: player ID, clientStates: dict of states
+        self.id = None
         self.instance = None
         self.retryConnection = True
 
@@ -69,7 +70,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         """
         Load the world given the ID.
         """
-        
+        pass
 
     def _loadWorld(self, filepath):
         pass

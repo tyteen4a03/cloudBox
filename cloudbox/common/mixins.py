@@ -58,6 +58,9 @@ class CloudBoxProtocolMixin(object):
     def db(self):
         return self.factory.db
 
+    def getFactory(self, factoryName):
+        return self.factory.getFactory(factoryName)
+
     def sendPacket(self, packetID, packetData={}, requestID=None, priority=5):
         return self.gpp.sendPacket(packetID, packetData, requestID, priority)
 
@@ -134,3 +137,9 @@ class TaskTickMixin(TickMixin):
     @property
     def taskLoop(self):
         return LoopingCall(self.taskTick)
+
+
+class AttributeDict(dict):
+    def __init__(self, **kwargs):
+        super(AttributeDict, self).__init__(self, **kwargs)
+        self.__dict__ = self

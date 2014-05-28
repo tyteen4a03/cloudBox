@@ -50,6 +50,8 @@ ERRORS = {
     "header_mismatch": 30,
     "unsupported_level_version": 31,
     "required_fields_missing": 32,
+    # DB errors
+    "data_corrupt": 40,
     # Hub <-> World methods error
     "worldserver_link_not_established": 200,
     "world_file_not_found": 201
@@ -120,3 +122,13 @@ BAN_TYPES = {
 }
 
 BAN_TYPES_INV = dict((v, k) for k, v in BAN_TYPES.iteritems())
+
+import uuid
+
+UUID = {
+    "cloudbox": uuid.UUID("141361c5-3bea-49e4-bf9f-89b01ba74e2a"),
+    "cloudbox.servers": uuid.UUID('791a2ef0-fe5f-5ce0-b00a-0d9c11ff49ab'),
+    "cloudbox.worlds": uuid.UUID('c6b37b83-26a5-51fc-b078-adc6e388a9a3'),
+    "cloudbox.users": uuid.UUID('b0a6eda6-dad3-5cd6-ad2d-3b3ff28429c9'),
+    "cloudbox.userGroups": uuid.UUID('baf304c4-4db2-5421-a8b5-fbf7849d9fc0'),
+}

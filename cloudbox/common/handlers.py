@@ -50,7 +50,6 @@ class HandshakePacketHandler(BasePacketHandler):
         self.logger.info("Received handshake from {}: {} with serverType {}".format(self.parent.transport.getPeer().host, packetData[0], packetData[1]))
         # The rest of the operations are carried out by the classes that subclass us
 
-
     def packData(self, packetData):
         return [
             self.parent.serverName,
@@ -67,7 +66,7 @@ class CallbackPacketHandler(BasePacketHandler):
     def handleData(self, packetData, requestID=None):
         # Try to locate the request
         request = self.gpp.requests[requestID]
-        if packetData[0]: # Success!
+        if packetData[0]:  # Success!
             request.callback(packetData[1])
         else:
             request.errback(packetData[1])
@@ -103,7 +102,7 @@ class DisconnectPacketHandler(BasePacketHandler):
 
     def packData(self, packetData):
         return [
-            self.parent.serverType, # In case the handshake failed
+            self.parent.serverType,  # In case the handshake failed
             packetData["disconnectType"],
             packetData["errorID"],
             packetData["message"]

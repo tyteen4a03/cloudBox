@@ -7,6 +7,7 @@ from cloudbox.common.constants import common, handlers
 
 from cloudbox.common.handlers import BasePacketHandler
 from cloudbox.common.handlers import HandshakePacketHandler
+from cloudbox.common.player import Player
 
 
 class WorldHandshakePacketHandler(HandshakePacketHandler):
@@ -26,6 +27,8 @@ class StateUpdatePacketHandler(BasePacketHandler):
             # Delete whatever we have
             del self.parent.factory.clients[packetData[0]]
             return
+        if packetData[0] not in self.parent.factory.clients:
+            self.parent.factory.clients[packetData[0]] = Player()
         self.parent.factory.clients[packetData[0]].update(packetData)
         if len(packetData) == 3:
             for key in packetData[2]:

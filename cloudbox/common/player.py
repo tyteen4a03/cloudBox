@@ -3,11 +3,11 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-from peewee import *
-
-databaseProxy = Proxy()  # Modified by CloudBoxService
+from cloudbox.common.mixins import AttributeDict
 
 
-class BaseModel(Model):
-    class Meta:
-        database = databaseProxy
+class Player(AttributeDict):
+    """
+    A player. Stores all information about the player.
+    """
+    pass

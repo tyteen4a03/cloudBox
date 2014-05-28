@@ -6,11 +6,12 @@
 # Tables that should exist in the latest release.
 TABLES = [
     "cb_global_metadata", # Always listed first
-    "cb_bans", # Always listed first
-    "cb_ips", # Always listed first
-    "cb_user_assoc",
+    "cb_bans",
+    "cb_ips",
     "cb_user_groups",
+    "cb_user_group_user_assoc",
     "cb_users",
-    "cb_world_data",
+    #"cb_world_data",
     "cb_worlds",
+    "cb_worldservers",
 ]

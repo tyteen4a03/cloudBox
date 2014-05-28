@@ -39,7 +39,7 @@ HANDLERS_SERVER_BASIC = {
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
 HANDLERS_WORLD_SERVER = {
-    TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "ClientStateUpdatePacketHandler"),
+    TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "StateUpdatePacketHandler"),
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }
 

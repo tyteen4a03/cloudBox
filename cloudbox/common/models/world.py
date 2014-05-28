@@ -10,6 +10,13 @@ from cloudbox.common.models.servers import WorldServer
 
 
 class World(BaseModel):
+    class Meta:
+        db_table = "cb_worlds"
     id = PrimaryKeyField()
     name = CharField()
-    worldServerID = ForeignKeyField(WorldServer)
+    worldServerID = ForeignKeyField(WorldServer, db_column="worldServerID")
+    filePath = CharField()
+    isDefault = BooleanField()
+    lastAccessed = IntegerField()
+    lastModified = IntegerField()
+    timeCreated = IntegerField()
