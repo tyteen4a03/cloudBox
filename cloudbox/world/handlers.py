@@ -15,8 +15,38 @@ class WorldHandshakePacketHandler(HandshakePacketHandler):
         super(WorldHandshakePacketHandler, self).handleData(packetData, requestID)
         if packetData[1] == common.SERVER_TYPES["HubServer"]:
             # OK, connection established
+            self.parent.factory.id = packetData[2]
             self.parent.connectionEstablished = True
             self.logger.info("Connection with HubServer established.")
+
+
+class NewPlayerPacketHandler(BasePacketHandler):
+    packetID = handlers.TYPE_NEW_PLAYER
+
+    def handleData(self, packetData, requestID=None):
+        sessionID = packetData[0]
+        thePlayer = Player()
+        thePlayer["sessionID"] = sessionID
+        self.parent.factory.clients[sessionID] = thePlayer
+        if requestID > 0:
+            self.parent.sendCallback(requestID, True)
+
+    def packData(self, packetData):
+        return [packetData["sessionID"]]
+
+
+class PlayerDisconnectPacketHandler(BasePacketHandler):
+    packetID = handlers.TYPE_PLAYER_DISCONNECT
+
+    def handleData(self, packetData, requestID=None):
+        sessionID = packetData[0]
+        # Cleanup here
+        del self.parent.factory.clients[sessionID]
+        if requestID > 0:
+            self.parent.sendCallback(requestID, True)
+
+    def packData(self, packetData):
+        return [packetData["sessionID"]]
 
 
 class StateUpdatePacketHandler(BasePacketHandler):
@@ -29,7 +59,7 @@ class StateUpdatePacketHandler(BasePacketHandler):
             return
         if packetData[0] not in self.parent.factory.clients:
             self.parent.factory.clients[packetData[0]] = Player()
-        self.parent.factory.clients[packetData[0]].update(packetData)
+        self.parent.factory.clients[packetData[0]].update(packetData[1])
         if len(packetData) == 3:
             for key in packetData[2]:
                 del self.parent.factory.clients[packetData[0]][key]
@@ -38,7 +68,7 @@ class StateUpdatePacketHandler(BasePacketHandler):
                 self.parent.factory.clients[packetData[0]][key] = value
         # Callback if needed
         if requestID > 0:
-            self.gpp.sendPacket(handlers.TYPE_CALLBACK, {"isSuccess": True})
+            self.parent.sendCallback(requestID, True)
 
     def packData(self, packetData):
         l = [packetData["sessionID"]]

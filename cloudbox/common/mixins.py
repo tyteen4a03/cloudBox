@@ -5,7 +5,6 @@
 
 import Queue
 
-from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
 
@@ -70,17 +69,40 @@ class CloudBoxProtocolMixin(object):
     def getTickInterval(self, entry=""):
         return self.factory.getTickInterval(entry)
 
-    def sendHandshake(self):
-        self.sendPacket(TYPE_HANDSHAKE)
+    def sendHandshake(self, clientID=None):
+        return self.sendPacket(TYPE_HANDSHAKE, {"clientID": clientID})
 
     def sendError(self, error, errorID=ERRORS["unknown"]):
-        self.sendDisconnect(DISCONNECT_ERROR, errorID, error)
+        return self.sendDisconnect(DISCONNECT_ERROR, errorID, error)
 
     def sendServerShutdown(self, reason=""):
-        self.sendDisconnect(DISCONNECT_SHUTDOWN, reason)
+        return self.sendDisconnect(DISCONNECT_SHUTDOWN, reason)
 
     def sendDisconnect(self, disconnectType=DISCONNECT_GENERIC, errorID=ERRORS["unknown"], message=""):
-        self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "errorID": errorID, "message": message})
+        return self.sendPacket(TYPE_DISCONNECT, {"disconnectType": disconnectType, "errorID": errorID, "message": message})
+
+    def sendCallback(self, requestID, isSuccess, data={}):
+        return self.sendPacket(TYPE_CALLBACK, {"isSuccess": isSuccess, "data": data}, requestID=requestID)
+
+
+class WorldServerProtocolMixin(object):
+
+    def sendNewPlayer(self, sessionID):
+        return self.sendPacket(TYPE_NEW_PLAYER, {"sessionID": sessionID})
+
+    def sendPlayerDisconnect(self, sessionID):
+        return self.sendPacket(TYPE_PLAYER_DISCONNECT)
+
+    def sendStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
+        d = self.sendPacket(TYPE_STATE_UPDATE,
+            {
+                "sessionID": sessionID,
+                "clientState": states,
+                "keysToDelete": keysToDelete
+            },
+        )
+        if requireResponse:
+            return d
 
 
 class TickMixin(object):
@@ -137,9 +159,3 @@ class TaskTickMixin(TickMixin):
     @property
     def taskLoop(self):
         return LoopingCall(self.taskTick)
-
-
-class AttributeDict(dict):
-    def __init__(self, **kwargs):
-        super(AttributeDict, self).__init__(self, **kwargs)
-        self.__dict__ = self

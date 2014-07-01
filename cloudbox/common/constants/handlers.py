@@ -14,7 +14,9 @@ TYPE_GET_STATUS = 0x02
 TYPE_CALLBACK = 0x03
 
 TYPE_STATE_UPDATE = 0x30
-TYPE_LOAD_WORLD = 0x31
+TYPE_NEW_PLAYER = 0x31
+TYPE_PLAYER_DISCONNECT = 0x32
+TYPE_LOAD_WORLD = 0x33
 
 TYPE_ERROR = 0xFE
 TYPE_DISCONNECT = 0xFF
@@ -38,8 +40,11 @@ HANDLERS_SERVER_BASIC = {
     TYPE_ERROR: ("cloudbox.common.handlers", "ErrorPacketHandler"),
     TYPE_DISCONNECT: ("cloudbox.common.handlers", "DisconnectPacketHandler"),
 }
+
 HANDLERS_WORLD_SERVER = {
     TYPE_STATE_UPDATE: ("cloudbox.world.handlers", "StateUpdatePacketHandler"),
+    TYPE_NEW_PLAYER: ("cloudbox.world.handlers", "NewPlayerPacketHandler"),
+    TYPE_PLAYER_DISCONNECT: ("cloudbox.world.handlers", "PlayerDisconnectPacketHandler"),
     TYPE_LOAD_WORLD: ("cloudbox.world.handlers", "LoadWorldPacketHandler")
 }
 
@@ -49,24 +54,3 @@ TASKS_GLOBAL = {
 TASKS_HUB_MC = {
 
 }
-
-# Future consideration: Unused for now
-
-#from collections import namedtuple
-
-
-class namedtuple(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-# Packet definition
-BASE_PACKET = namedtuple("Packet", ["packetID", "packetData"])
-
-PACKET_DEFS = {}
-
-PACKET_DEFS[TYPE_KEEPALIVE] = namedtuple("KeepAlivePacket", [])
-PACKET_DEFS[TYPE_HANDSHAKE] = namedtuple("HandshakePacket", ["serverName", "serverType"])
-PACKET_DEFS[TYPE_STATE_UPDATE] = namedtuple("StateUpdatePacket", ["sessionID", "updates"])
-PACKET_DEFS[TYPE_LOAD_WORLD] = namedtuple("LoadWorldPacket", [])
-PACKET_DEFS[TYPE_ERROR] = namedtuple("ErrorPacket", [])
-PACKET_DEFS[TYPE_DISCONNECT] = namedtuple("DisconnectPacket", [])

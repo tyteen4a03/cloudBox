@@ -17,7 +17,7 @@ from pubsub import pub
 from twisted.python.failure import Failure
 
 from cloudbox.common.constants.common import *
-from cloudbox.common.database import checkForFailure, ConnectionPool
+from cloudbox.common.database import hasFailed, ConnectionPool
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.models import databaseProxy
 from cloudbox.common.models.servers import GlobalMetadata
@@ -115,7 +115,7 @@ class CloudBoxService(object):
         self.db.runQuery(*GlobalMetadata.select(GlobalMetadata.value).where(GlobalMetadata.name == "databaseVersion").sql()).addBoth(self.checkTablesCallabck)
 
     def checkTablesCallabck(self, res):
-        checkForFailure(res)
+        hasFailed(res)
         if isinstance(res, Failure):
             self.stop()
         elif not res:

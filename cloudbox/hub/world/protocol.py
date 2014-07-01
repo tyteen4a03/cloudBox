@@ -6,16 +6,14 @@
 import logging
 
 from twisted.internet.protocol import Protocol
-from twisted.internet.task import LoopingCall
 
 from cloudbox.common.constants.common import *
-from cloudbox.common.constants.handlers import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.loops import LoopRegistry
-from cloudbox.common.mixins import CloudBoxProtocolMixin, TickMixin
+from cloudbox.common.mixins import CloudBoxProtocolMixin, TickMixin, WorldServerProtocolMixin
 
 
-class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
+class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, WorldServerProtocolMixin, TickMixin):
     """
     The protocol class for the WorldServer communicator factory.
     """
@@ -53,18 +51,6 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
             "players": 0
         }
 
-    ### Packet functions ###
-    def sendStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
-        d = self.sendPacket(TYPE_STATE_UPDATE,
-            {
-                "sessionID": sessionID,
-                "clientState": states,
-                "keysToDelete": keysToDelete
-            },
-        )
-        if requireResponse:
-            return d
-
     ### End-client related functions ###
 
     def protoDoJoinServer(self, proto, world=None):
@@ -72,12 +58,14 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, TickMixin):
         Makes the protocol join the server.
         """
         # Send the basic information over
-        d = self.sendStateUpdate(proto.sessionID, proto.player, requireResponse=True)
-        self.logger.info("Sent request for {} to join worldServer {}".format(proto.player["username"], self.id))
-        return d
+        def afterNewPlayer(whatever):
+            self.logger.debug("Whatever is " + str(whatever))
+            d = self.sendStateUpdate(proto.sessionID, proto.player, requireResponse=True)
+            self.logger.info("Sent request for {} to join worldServer {}".format(proto.player["username"], self.id))
+            return d
+        return self.sendNewPlayer(proto.sessionID).addCallback(afterNewPlayer)
 
     def protoDoLeaveServer(self, proto):
         """
         Makes the protocol leave the server.
         """
-        pass

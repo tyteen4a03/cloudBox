@@ -15,7 +15,7 @@ from twisted.python import log, failure
 logger = getLogger("cloudbox.database.error")
 
 
-def checkForFailure(res):
+def hasFailed(res):
     if isinstance(res, failure.Failure):
         logger.error("Database query error:")
         logger.error(res.getTraceback())

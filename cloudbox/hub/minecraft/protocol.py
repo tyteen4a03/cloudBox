@@ -11,7 +11,7 @@ from twisted.internet.protocol import Protocol, connectionDone as _connDone
 
 from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.common import *
-from cloudbox.common.database import checkForFailure
+from cloudbox.common.database import hasFailed
 from cloudbox.common.gpp import MinecraftClassicPacketProcessor
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxProtocolMixin
@@ -146,7 +146,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         if mode == "solo":
             # Find out which WS has the default world and join it
             def afterGetDefaultWorld(res):
-                checkForFailure(res)
+                hasFailed(res)
                 if not res:
                     raise
                 wsf = self.factory.getFactory("WorldServerCommServerFactory")

@@ -6,17 +6,17 @@
 import hashlib
 import time
 
-from twisted.internet.defer import DeferredList, Deferred
+from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
 from zope.interface import implements
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.classic import *
-from cloudbox.common.database import checkForFailure
+from cloudbox.common.database import hasFailed
 from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.handlers import BasePacketHandler
 from cloudbox.common.interfaces import IMinecraftPacketHandler
-from cloudbox.common.models.user import User, UserGroupUserAssoc, UserServiceAssoc
+from cloudbox.common.models.user import User, UserServiceAssoc
 from cloudbox.common.util import packString
 
 
@@ -25,8 +25,6 @@ class BaseMinecraftPacketHandler(BasePacketHandler):
     Base packet handler for all Minecraft packets.
     """
     implements(IMinecraftPacketHandler)
-
-    packetID = None
 
     def unpackData(self, data):
         return TYPE_FORMATS[self.packetID].decode(data)
@@ -44,10 +42,10 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
     def handleData(self, packetData, requestID=None):
         # Get the client's details
-        protocol, self.parent.player.username, mppass, utype = packetData
+        protocol, self.parent.player["username"], mppass, utype = packetData
         if self.parent.identified:
             # Sent two login packets - I wonder why?
-            self.parent.factory.logger.info("Kicked '%s'; already logged in to server" % self.parent.player.username)
+            self.parent.factory.logger.info("Kicked '%s'; already logged in to server" % self.parent.player["username"])
             self.parent.sendError("You already logged in!")
 
         # Right protocol?
@@ -69,11 +67,10 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
         #value = self.parent.factory.runHook("prePlayerConnect", {"client": self})
 
         def populateData(res):
-            failed = checkForFailure(res)
+            failed = hasFailed(res)
 
             def actuallyPopulateData(theRes):
-                failed = checkForFailure(theRes)
-                if failed:
+                if hasFailed(theRes):
                     self.parent.sendError("The server is currently not available. Please try again later.")
                     raise DatabaseServerLinkException(ERRORS["data_corrupt"])
                 for key, value in u:
@@ -89,8 +86,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
                 )
 
                 def step2(theRes):
-                    failed = checkForFailure(theRes)
-                    if failed:
+                    if hasFailed(theRes):
                         self.parent.sendError("The server is currently not available. Please try again later.")
                         raise DatabaseServerLinkException(ERRORS["data_corrupt"])
                     self.parent.db.runQuery(*UserServiceAssoc.create(
@@ -131,18 +127,18 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             usernameList = self.parent.factory.buildUsernameList()
             if self.parent.player["username"].lower() in usernameList:
                 # Kick the other guy out
-                self.parent.factory.clients[usernameList[self.parent.player["username"].lower()].id]["protocol"].sendError(
+                self.parent.factory.clients[usernameList[self.parent.player["username"]]]["protocol"].sendError(
                     "You logged in on another computer.", disconnectNow=True)
                 return
 
             # All check complete. Request World Server to prepare level
             self.parent.identified = True
-            self.parent.factory.assignWorldServer(self.parent, world="default").addBoth(afterAssignedWorldServer)
+            self.parent.factory.assignWorldServer(self.parent).addBoth(afterAssignedWorldServer)
 
         def gotBans(data):
             # Are they banned?
             if data:
-                self.parent.sendError("You are banned: %s" % data["reason"])
+                self.parent.sendError("You are banned: {}".format(data["reason"]))
                 return
             self.parent.factory.getUserByUsername(self.parent.player["username"]).addBoth(populateData).addBoth(gotData)
 
@@ -361,6 +357,7 @@ class ErrorPacketHandler(BaseMinecraftPacketHandler):
     packetID = TYPE_ERROR
 
     def packData(self, packetData):
+        self.logger.info("Sending error to client: {}".format(packetData["error"]))
         return TYPE_FORMATS[self.packetID].encode(packetData["error"])
 
 

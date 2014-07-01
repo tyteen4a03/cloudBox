@@ -51,10 +51,13 @@ class HandshakePacketHandler(BasePacketHandler):
         # The rest of the operations are carried out by the classes that subclass us
 
     def packData(self, packetData):
-        return [
+        l = [
             self.parent.serverName,
             self.parent.serverType
         ]
+        if packetData["clientID"]: # Replying to a handshake
+            l.append(packetData["clientID"])
+        return l
 
 
 class CallbackPacketHandler(BasePacketHandler):

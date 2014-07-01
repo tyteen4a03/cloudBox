@@ -67,7 +67,7 @@ class BaseGeneralPacketProcessor(object):
     def initHandlerClass(self, handlerID):
         # Grab the class
         handlerEntry = self.handlers[handlerID]
-        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger, self.transport)
+        self.handlerInstances[handlerID] = getattr(importlib.import_module(handlerEntry[0]), handlerEntry[1])(self.parent, self.logger, self)
 
     def packetTick(self):
         if self.packetsOut.empty():
@@ -108,7 +108,6 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         self.unpacker = msgpack.Unpacker()
         self.packer = msgpack.Packer()
         super(MSGPackPacketProcessor, self).__init__(parent, handlers, transport)
-        self.requests = []  # Request ID: callback
 
     def feed(self, data):
         self.unpacker.feed(data)
@@ -122,6 +121,7 @@ class MSGPackPacketProcessor(BaseGeneralPacketProcessor):
         if not data:
             return  # Try again later
         # Read the handler
+        self.logger.debug("Received packet: {}".format(str(data)))
         handler = data[0]
         if handler not in self.handlers.keys():
             # TODO Client identifier

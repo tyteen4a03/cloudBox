@@ -38,6 +38,7 @@ Server to Client
 Packet Data:
 ServerName: String - The server's name
 ServerType: Int - The server's type. Must be an integer defined in cloudbox.common.constants.common.SERVER_TYPES
+ClientID: Int - The client's ID assigned to the
 
 Handling of packet (Server to Client):
 When a client connects, server must immediately check if the client is within its accepted client range. If the client
@@ -51,10 +52,15 @@ Handling of packet (Client to Server):
 When connection is made, client must send a Handshake packet, and wait for either a Disconnect packet, or a Handshake
 packet indicating successful handshaking.
 
-0x02 - Call result
+0x02 - Callback
 Two-way
 Used by: HubServer, WebServer, WorldServer
 Direction: * <-> *
+
+Both ways
+Packet Data:
+isSuccess: Whether the original call succeeded.
+data: The callback data.
 
 0x30 - State Update
 Two-way
@@ -68,10 +74,39 @@ clientState: A dictionary of any state the sender wishes to update. If omitted, 
 keysToDelete: A list of any keys to delete. Optional.
 
 Handling of packet (Both Ways):
-Both sides are expected to overwrite values according to the client.
+Both sides are expected to overwrite values as specified in the packet. Permissions to override should be checked before
+the packet is sent.
+
+0x31 - New Player
+Server to Client
+Used by: HubServer, WorldServer
+Direction: Hub -> World (opposite direction should not be used in most circumstances)
+
+Server to Client
+Packet Data:
+sessionID: The Player's session ID.
+
+Handling of packet (Both Ways):
+Both sides are expected to create the Player and store it in the players dictionary. This packet is only for bookkeeping
+purposes; it should only be used after the connection has been established. Additional details of the Player should
+immediately be sent using the State Update packet.
 
 
-0x31 - Load World
+0x32 - Delete Player
+Two-way (usually client to server)
+Used by: HubServer, WorldServer
+Direction: * <-> *
+
+Both ways
+Packet Data:
+sessionID: The Player's session ID
+
+Handling of packet (Both Ways):
+Both sides are expected to delete the Player from the players dictionary and do any subsequent cleanups if required.
+This packet is only for bookkeeping purposes; it should only be used after the relevant disconnection packets has been
+sent, or the player actively dropped the connection.
+
+0x32 - Load World
 Server to Client
 HubServer -> WorldServer
 

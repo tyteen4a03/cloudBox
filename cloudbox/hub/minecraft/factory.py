@@ -6,22 +6,17 @@
 import logging
 
 from netaddr import IPAddress
-from twisted.internet import defer
 from twisted.internet.protocol import ServerFactory
-from twisted.internet.defer import Deferred, DeferredList
-from twisted.python.failure import Failure
 
 from cloudbox.common.constants.classic import *
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.cpe import *
-from cloudbox.common.database import checkForFailure
-from cloudbox.common.exceptions import ErrorCodeException
+from cloudbox.common.database import hasFailed
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
-from cloudbox.common.models.servers import WorldServer
 from cloudbox.common.models.user import Bans, User, UserIP
 from cloudbox.common.models.world import World
-from cloudbox.hub.exceptions import WorldServerLinkException
+from cloudbox.hub.exceptions import NoResultsException, WorldServerLinkNotEstablishedException
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
 
@@ -103,15 +98,15 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         def afterAddedNewClient(wsProto):
             # Confirm the assginment
             proto.wsID = wsProto.wsID
-            self.logger.log(wsID)
+            self.logger.info(wsProto.wsID)
 
         def gotWorldServer(res):
-            checkForFailure(res)
+            hasFailed(res)
             if not res:
-                raise ErrorCodeException(ERRORS["no_results"])
+                raise NoResultsException
             ws = res[0]["worldServerID"]
             if ws not in self.getFactory("WorldServerCommServerFactory").worldServers:
-                raise WorldServerLinkException(ERRORS["worldserver_link_not_established"])
+                raise WorldServerLinkNotEstablishedException
             wsProto = self.getFactory("WorldServerCommServerFactory").worldServers[ws]
             return wsProto.protoDoJoinServer(proto, world).addCallback(afterAddedNewClient, wsProto)
 
@@ -124,12 +119,13 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
 
     def buildUsernameList(self, wsID=None):
         """
-        Builds a list of {username: client object} by the client list, or
-        specify a WorldServer ID to filter.
+        Builds a list of {username: client object} by the client list, or specify a WorldServer ID to filter.
+        @param wsID The world server ID to query. Leave None to query all users.
+        @return The usernames dict, in the form of {username: protocol}.
         """
-        theList = dict()
+        theList = {}
         for cID, cEntry in self.clients.items():
-            if cEntry["username"]:
+            if cEntry["username"]: # Ignore those who are still establishing a connection
                 if wsID:
                     if cEntry["proto"].wsID == wsID:
                         theList[cEntry["username"].lower()] = cEntry["protocol"]
@@ -149,27 +145,27 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
         assert not (username is None and ip is None)
 
         def afterGetUser(res):
-            checkForFailure(res)
+            hasFailed(res)
             if not res:  # First time user
                 return []
             return self.db.runQuery(*Bans.select().where(Bans.type == BAN_TYPES["globalBan"] & Bans.username == res[0]["username"]).sql()).addBoth(afterGetBans, username)
 
         def afterGetIP(res):
-            checkForFailure(res)
+            hasFailed(res)
             if not res:  # First time visitor
                 return []
             return self.db.runQuery(*Bans.select().where(Bans.type == BAN_TYPES["globalIPBan"] & Bans.recordID == res[0]["id"])).addBoth(afterGetBans, str(ip))
 
         def afterGetBans(res, lookupEntity):
-            checkForFailure(res)
+            hasFailed(res)
             if not res:
-                return []
+                return {}
             elif len(res) > 1:
                 # More than one record...
                 self.logger.warn("Multiple global ban detected for lookup entity {}.", lookupEntity)
             return res[0]
-        self.logger.info(username)
-        self.logger.info(ip)
+
+        self.logger.debug("getBans for username {}, IP {}".format(username, ip))
         if username and ip is None:
             # We need the user id first
             return self.db.runQuery(*User.select(User.id).where(User.username == username).sql()).addBoth(afterGetUser)
@@ -177,11 +173,9 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             # We need the IP id first
             if not isinstance(ip, IPAddress):
                 ip = IPAddress(ip)
-
             return self.db.runQuery(*UserIP.select(UserIP.id).where(UserIP.ip == int(ip)).sql()).addBoth(afterGetIP)
-        # TODO
-        #elif ip and username:
-        return []
+        #elif ip and username: # TODO
+        return {}
 
     def getUserByUsername(self, username):
         """
