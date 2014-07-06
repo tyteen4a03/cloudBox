@@ -84,3 +84,29 @@ class ILoopRegistry(Interface):
         """
         Unregisters a loop.
         """
+
+
+class IPlugin(Interface):
+    """
+    An interface to all plugins.
+    """
+
+    name = Attribute("""Name of the plugin""")
+    version = Attribute("""Version of the plugin""")
+
+
+class ICommand(Interface):
+    """
+    An interface for all commands.
+    """
+
+    name = Attribute("""Name of the command""")
+    aliases = Attribute("""Aliases of the command, if any""")
+
+    def runCommand(parent, data):
+
+
+class IPlayerCommand(ICommand):
+    """
+    An Interface for all Player Commands.
+    """
