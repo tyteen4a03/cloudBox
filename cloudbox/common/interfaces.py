@@ -104,6 +104,9 @@ class ICommand(Interface):
     aliases = Attribute("""Aliases of the command, if any""")
 
     def runCommand(parent, data):
+        """
+        Run the command specified.
+        """
 
 
 class IPlayerCommand(ICommand):
