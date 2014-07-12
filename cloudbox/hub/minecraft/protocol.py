@@ -44,6 +44,7 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
         """
         self.gpp = MinecraftClassicPacketProcessor(self, self.factory.handlers, self.transport)
         self.loops.registerLoop("packets", self.gpp.packetLoop).start(self.getTickInterval("minecraft"))
+        self.logger.debug("Packet sender started.")
         # Get an ID for ourselves
         self.sessionID = self.factory.claimID(self)
         if self.sessionID is None:
@@ -151,11 +152,12 @@ class MinecraftHubServerProtocol(Protocol, CloudBoxProtocolMixin):
                     raise
                 wsf = self.factory.getFactory("WorldServerCommServerFactory")
                 # Get world server link
-                if res[0]["id"] not in wsf.worldServers:
+                if res[0]["worldServerID"] not in wsf.worldServers:
                     # WorldServer down, raise hell
+                    self.logger.debug(str(res[0]))
                     raise WorldServerLinkException(200, "World server link not established")
                 # Send the player over
-                wsf.worldServers[res[0]["id"]].protoDoJoinServer(self, res[0]["id"])
+                wsf.worldServers[res[0]["worldServerID"]].protoDoJoinServer(self, res[0]["id"]) # TODO World name or ID?
             return self.db.runQuery(
                 *World.select(World.name, World.id, World.filePath, World.worldServerID).where(World.isDefault == 1).sql()
             ).addCallbacks(afterGetDefaultWorld, self._joinWorldFailedErrback)
