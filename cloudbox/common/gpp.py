@@ -22,7 +22,6 @@ class BaseGeneralPacketProcessor(object):
     implements(IGeneralPacketProcessor)
 
     name = None
-    packetsOut = Queue.PriorityQueue()
 
     def __init__(self, parent, handlers, transport):
         self.parent = parent
@@ -31,6 +30,7 @@ class BaseGeneralPacketProcessor(object):
         self.requests = []
         self.handlerInstances = {}
         self.logger = logging.getLogger("cloudbox.gpp.{}".format(self.name))
+        self.packetsOut = Queue.PriorityQueue()
 
     @property
     def serverName(self):
@@ -62,6 +62,7 @@ class BaseGeneralPacketProcessor(object):
         return d
 
     def _sendPacket(self, packet):
+        self.logger.debug("Sending {} to {}".format(packet, str(self.parent)))
         self.transport.write(packet)
 
     def initHandlerClass(self, handlerID):

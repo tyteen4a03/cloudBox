@@ -95,10 +95,10 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             world = "default"  # TODO Link to settings
         assert proto.wsID is None, "Tried to reassign already assigned client."
 
-        def afterAddedNewClient(wsProto):
+        def afterAddedNewClient(whatever, wsProto):
             # Confirm the assginment
-            proto.wsID = wsProto.wsID
-            self.logger.info(wsProto.wsID)
+            proto.wsID = wsProto.id
+            self.logger.info(wsProto.id)
 
         def gotWorldServer(res):
             hasFailed(res)

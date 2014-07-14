@@ -20,3 +20,4 @@ class World(BaseModel):
     lastAccessed = IntegerField()
     lastModified = IntegerField()
     timeCreated = IntegerField()
+    preloadAtServerStart = BooleanField() # if isDefault, always preloaded
