@@ -9,7 +9,10 @@ from twisted.internet.protocol import ReconnectingClientFactory
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
+from cloudbox.common.database import hasFailed
+from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
+from cloudbox.common.models.world import World
 from cloudbox.world.protocol import WorldServerProtocol
 
 
@@ -66,18 +69,34 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         self.logger.critical("Connection to HubServer failed: %s" % reason)
         connector.connect()
 
-    def loadWorld(self, worldId):
+    def loadWorld(self, worldInfo):
         """
-        Load the world given the ID.
+        Loads the world given a World database entry.
+        :param worldInfo A world database entry.
         """
-        pass
+        # Find the world class to use according to its type
 
-    def _loadWorld(self, filepath):
+    def loadWorldByID(self, worldID):
         """
-        Loads the world into the world list given the file's path.
-        @param str filepath The (relative) file path to the world file.
-        @return
+        Loads the world given the ID.
         """
+        def afterWorldSelect(res):
+            if hasFailed(res):
+                raise
+            self.loadWorld(res[0])
+        self.db.runQuery(*World.select().where(World.id == worldID).sql()).addCallback(afterWorldSelect)
+
+    def loadWorldByWorldName(self, worldName):
+        """
+        Loads the world given its name
+        :param worldName The world name.
+        :return int World ID.
+        """
+        def afterWorldSelect(res):
+            if hasFailed(res):
+                raise
+            self.loadWorld(res[0])
+        self.db.runQuery(*World.select().where(World.name == worldName).sql()).addCallback(afterWorldSelect)
 
     def unloadWorld(self, worldId):
         pass
@@ -94,17 +113,28 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         """
         pass
 
-    def saveWorld(self, worldID):
-        pass
-
     def saveAllWorlds(self):
-        pass
+        """
+        Saves all worlds.
+        """
+        # TODO Return the Deferreds?
+        for w in self.worlds:
+            w.saveWorld()
 
     def closeWorld(self, worldID):
-        pass
+        """
+        Closes a world without saving its states.
+        :param worldID The world ID.
+        """
+        w = self.worlds[worldID]
+        # TODO Some physics shutdown logic here
 
     def closeAllWorlds(self):
-        pass
+        """
+        Close all worlds.
+        """
+        for w in self.worlds:
+            self.closeWorld(w.worldID)
 
     def addWorld(self, worldName, filepath):
         """Adds the world to the database."""

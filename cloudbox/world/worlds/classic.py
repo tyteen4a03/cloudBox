@@ -22,6 +22,7 @@ class ClassicWorld(object):
 
     def __init__(self, factory, **worldParams):
         self.factory = factory
+        self.worldID = None
         self.worldReady = False
         self.worldParams = worldParams
         self.format = None
