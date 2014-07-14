@@ -86,12 +86,15 @@ class CloudBoxProtocolMixin(object):
 
 
 class WorldServerProtocolMixin(object):
+    """
+    A mixin class proving common methods for WorldServer communication.
+    """
 
     def sendNewPlayer(self, sessionID):
         return self.sendPacket(TYPE_NEW_PLAYER, {"sessionID": sessionID})
 
     def sendPlayerDisconnect(self, sessionID):
-        return self.sendPacket(TYPE_PLAYER_DISCONNECT)
+        return self.sendPacket(TYPE_PLAYER_DISCONNECT, {"sessionID": sessionID})
 
     def sendStateUpdate(self, sessionID, states, keysToDelete=[], requireResponse=False):
         d = self.sendPacket(TYPE_STATE_UPDATE,

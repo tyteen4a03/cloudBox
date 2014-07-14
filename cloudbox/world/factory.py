@@ -73,7 +73,11 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         pass
 
     def _loadWorld(self, filepath):
-        pass
+        """
+        Loads the world into the world list given the file's path.
+        @param str filepath The (relative) file path to the world file.
+        @return
+        """
 
     def unloadWorld(self, worldId):
         pass

@@ -24,6 +24,7 @@ class ClassicWorld(object):
         self.factory = factory
         self.worldReady = False
         self.worldParams = worldParams
+        self.format = None
         self.name = None
         self.x = None
         self.y = None
@@ -38,19 +39,15 @@ class ClassicWorld(object):
         self.physics = None  # Physics engine here
 
     def loadWorld(self):
-        # TODO File IO needs own process?
-        deferToThread(self._loadWorld)
+        return deferToThread(self._loadWorld)
 
     def _loadWorld(self):
-        # Get the handler
-        cls = getattr(importlib.import_module(SUPPORTED_LEVEL_FORMATS[self.worldParams["worldType"][0]]),
-                      SUPPORTED_LEVEL_FORMATS[self.worldParams["worldType"][1]])
-        data = cls.loadWorld(self.worldParams["filePath"])
+        data = self.format.loadWorld(self.worldParams["filePath"])
         # Unpack data
         self.name = data["Name"]
-        self.x, self.y, self.z = data["X"], data["Z"], data["Y"]  # Blame Notch
+        self.x, self.y, self.z = data["X"], data["Z"], data["Y"]  # Blame OpenGL
         self.uuid = data["UUID"]
-        self.spawn = (data["Spawn"]["X"], data["Spawn"]["Z"], data["Spawn"]["Y"],  # Blame Notch
+        self.spawn = (data["Spawn"]["X"], data["Spawn"]["Z"], data["Spawn"]["Y"],  # Blame OpenGL
                       data["Spawn"]["H"], data["Spawn"]["P"])
         self.additionalData = {
             "CreatedBy": data["CreatedBy"],
@@ -64,7 +61,7 @@ class ClassicWorld(object):
         self.worldReady = True
 
     def saveWorld(self):
-        deferToThread(self._saveWorld)
+        return deferToThread(self._saveWorld)
 
     def _saveWorld(self):
         # Get the handler

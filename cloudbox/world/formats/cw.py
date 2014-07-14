@@ -3,7 +3,10 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
-import cStringIO
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
 import nbt
 from zope.interface import implements
@@ -30,31 +33,34 @@ class ClassicWorldWorldFormat(object):
     requiredFields = ["Name", "UUID", "X", "Y", "Z", "Spawn", "BlockArray" "Metadata"]
     optionalFields = ["CreatedBy", "MapGeneratorUsed", "TimeCreated", "LastAccessed", "LastModified"]
 
-    @staticmethod
-    def loadWorld(filepath):
+    def __init__(self, filepath):
+        self.filepath = filepath
+
+    def loadWorld(self, io=None):
         returnDict = {}
-        with open(filepath, "r") as fo:
-            _nbtFile = fo.read()
-        nbtObject = nbt.NBTFile(cStringIO.StringIO(_nbtFile))
+        if not io:
+            nbtObject = nbt.NBTFile(fileobj=open(self.filepath, "r"))
+        else:
+            nbtObject = nbt.NBTFile(fileobj=io)
+
         if nbtObject.name != "ClassicWorld":
             raise WorldLoadError(ERRORS["header_mismatch"], "Header mismatch. Maybe the file is broken?")
         if nbtObject["FormatVersion"] not in ClassicWorldWorldFormat.ACCEPTABLE_LEVEL_VERSIONS:
             raise WorldLoadError(ERRORS["unsupported_level_version"], "Level version unsupported.")
         missing = []
-        for r in ClassicWorldWorldFormat.requiredFields:
+        for r in self.requiredFields:
             if not nbtObject[r]:
                 missing.append(r)
             else:
                 returnDict[r] = nbtObject[r]
         if missing:
             raise WorldLoadError(ERRORS["required_fields_missing"], "Required field(s) {} missing.".format(missing.join(", ")))
-        for r in ClassicWorldWorldFormat.optionalFields:
+        for r in self.optionalFields:
             if nbtObject[r]:
                 returnDict[r] = nbtObject[r]
             else:
                 returnDict[r] = None
         return returnDict
 
-    @staticmethod
-    def saveWorld(filepath, data):
+    def saveWorld(self, data):
         pass
