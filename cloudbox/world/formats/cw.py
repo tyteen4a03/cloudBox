@@ -54,7 +54,7 @@ class ClassicWorldWorldFormat(object):
             else:
                 returnDict[r] = nbtObject[r]
         if missing:
-            raise WorldLoadError(ERRORS["required_fields_missing"], "Required field(s) {} missing.".format(missing.join(", ")))
+            raise WorldLoadError(ERRORS["required_fields_missing"], "Required field(s) {} missing.".format(", ".join(missing)))
         for r in self.optionalFields:
             if nbtObject[r]:
                 returnDict[r] = nbtObject[r]
