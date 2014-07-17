@@ -12,6 +12,7 @@ from cloudbox.common.constants.handlers import *
 from cloudbox.common.database import hasFailed
 from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
+from cloudbox.common.models.servers import WorldServer
 from cloudbox.common.models.world import World
 from cloudbox.world.protocol import WorldServerProtocol
 
@@ -43,6 +44,27 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         h[TYPE_HANDSHAKE] = ("cloudbox.world.handlers", "WorldHandshakePacketHandler")
         return h
 
+    def loadID(self):
+        def afterGetID(res):
+            if hasFailed(res):
+                raise
+            if len(res) == 0:
+                def afterInsertedEntry(res):
+                    if hasFailed(res):
+                        raise
+                    self.logger.info(res.lastrowid)
+                    self.id = res.lastrowid
+
+                _ws = WorldServer(
+                    name=self.settings["main"]["server-name"]
+                )
+                return self.db.runQuery(*_ws.sql()).addBoth(afterInsertedEntry)
+            else:
+                self.id = res[0]["id"]
+        return self.db.runQuery(
+            *WorldServer.select().where(WorldServer.name == self.settings["main"]["server-name"]).sql()
+        ).addBoth(afterGetID)
+
     ### Twisted functions
 
     def buildProtocol(self, addr):
@@ -51,10 +73,11 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         proto.factory = self
         return proto
 
-    def quit(self, msg):
+    def quit(self):
         self.retryConnection = False
         # Tell the HubServer we are breaking up
-        self.instance.sendDisconnect()
+        if self.instance:
+            self.instance.sendDisconnect()
 
     def clientConnectionLost(self, connector, reason):
         """
@@ -69,12 +92,15 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         self.logger.critical("Connection to HubServer failed: %s" % reason)
         connector.connect()
 
+    ### World manipulation methods ###
+
     def loadWorld(self, worldInfo):
         """
         Loads the world given a World database entry.
         :param worldInfo A world database entry.
         """
         # Find the world class to use according to its type
+        self.logger.info(worldInfo)
 
     def loadWorldByID(self, worldID):
         """
@@ -83,8 +109,13 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         def afterWorldSelect(res):
             if hasFailed(res):
                 raise
+            if len(res) == 0:
+                self.logger.error("No world with ID named {} found".format(worldID))
+                return
             self.loadWorld(res[0])
-        self.db.runQuery(*World.select().where(World.id == worldID).sql()).addCallback(afterWorldSelect)
+        return self.db.runQuery(*World.select().where(
+            World.worldServerID == self.id and World.id == worldID).sql(
+        )).addBoth(afterWorldSelect)
 
     def loadWorldByWorldName(self, worldName):
         """
@@ -95,8 +126,31 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         def afterWorldSelect(res):
             if hasFailed(res):
                 raise
+            if len(res) == 0:
+                self.logger.error("No world named {} found".format(worldName))
+                return
             self.loadWorld(res[0])
-        self.db.runQuery(*World.select().where(World.name == worldName).sql()).addCallback(afterWorldSelect)
+        return self.db.runQuery(*World.select().where(
+            World.worldServerID == self.id and World.name == worldName).sql()
+        ).addBoth(afterWorldSelect)
+
+    def loadPreloadedWorlds(self):
+        """
+        Loads the world that needs to be preloaded.
+        """
+        # TODO Check for  broken data?
+        def afterWorldSelect(res):
+            if hasFailed(res):
+                raise
+            if len(res) == 0:
+                self.logger.critical("No default world set; did you run the installation script?")
+                self.parentService.stop()
+                return
+            self.loadWorld(res[0])
+        return self.db.runQuery(*World.select().where(
+            World.worldServerID == self.id and
+            (World.preloadAtServerStart == 1 or World.isDefault == 1)).sql()
+        ).addBoth(afterWorldSelect)
 
     def unloadWorld(self, worldId):
         pass

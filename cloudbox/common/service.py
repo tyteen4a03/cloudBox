@@ -149,6 +149,7 @@ class CloudBoxService(object):
         """
         Initializes components as needed.
         """
+        self.logger.info("Stopping server...")
         if self.serverType == SERVER_TYPES["HubServer"]:
             from cloudbox.hub.run import shutdown as hubShutdown
             hubShutdown(self)

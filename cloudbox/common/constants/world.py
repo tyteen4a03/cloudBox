@@ -7,5 +7,8 @@
 Constants for World Servers.
 """
 SUPPORTED_LEVEL_FORMATS = {
-    "ClassicWorld": ("cloudbox.world.formats.cw", "ClassicWorldWorldFormat"),
+    "cw": {
+        "fullname": "ClassicWorld",
+        "format": ("cloudbox.common.world.formats.cw", "ClassicWorldWorldFormat")
+    }
 }
