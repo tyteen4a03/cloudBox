@@ -5,7 +5,6 @@
 
 from pubsub import pub
 from twisted.internet import reactor
-from twisted.internet.endpoints import TCP4ClientEndpoint
 from cloudbox.common.util import noArgs
 
 from cloudbox.world.factory import WorldServerFactory

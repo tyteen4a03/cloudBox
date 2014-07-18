@@ -84,7 +84,13 @@ class LoadWorldPacketHandler(BasePacketHandler):
     packetID = handlers.TYPE_LOAD_WORLD
 
     def handleData(self, packetData, requestID=None):
-        pass
+        def afterWorldLoaded():
+            if requestID > 0:
+                self.parent.sendCallback(requestID, True)
+
+        def afterWorldLoadFail():
+            if requestID > 0:
+                self.parent.sendCallback(requestID, False)
 
     def packData(self, packetData):
         return [

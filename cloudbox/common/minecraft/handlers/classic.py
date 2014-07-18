@@ -171,7 +171,7 @@ class LevelInitPacketHandler(BaseMinecraftPacketHandler):
     packetID = TYPE_LEVELINIT
 
     def packData(self, packetData):
-        pass
+        return TYPE_FORMATS[TYPE_LEVELINIT].encode()
 
 
 class LevelDataPacketHandler(BaseMinecraftPacketHandler):
@@ -201,86 +201,7 @@ class BlockChangePacketHandler(BaseMinecraftPacketHandler):
     packetID = TYPE_BLOCKCHANGE
 
     def handleData(self, packetData, requestID=None):
-        if self.parent.serverType == SERVER_TYPES["WorldServer"]:
-            x, y, z, created, block = packetData
-            if not self.parent.identified:
-                self.parent.factory.logger.info(
-                    "Kicked '%s'; did not send a login before building" % self.parent.ip)
-                self.parent.sendError("Provide an authentication before building.")
-                return
-            if block == 255:
-                # Who sends 255 anyway?
-                self.parent.factory.logger.debug("%s sent block 255 as 0" % self.parent.player["username"])
-                block = 0
-            # Check if out of block range or placing invalid blocks
-            if block not in BLOCKS.keys() or block in [BLOCKS_BY_NAME["water"], BLOCKS_BY_NAME["lava"]]:
-                self.parent.factory.logger.info("Kicked '%s' (IP %s); Tried to place invalid block %s" % (
-                                        self.parent.player["username"], self.parent.ip, block))
-                self.parent.sendError("Invalid blocks are not allowed!")
-                return
-            # TODO Permission Manager
-            if block == 7:  # and not permissionManager.hasWorldPermission(self.parent.permissions):
-                self.parent.factory.logger.info("Kicked '%s'; Tried to place bedrock." % self.parent.ip)
-                self.parent.sendError("Don't build bedrocks!")
-                return
-            try:
-            # If we're read-only, reverse the change
-                allowBuilding = self.parent.factory.runHook(
-                    "onBlockClick",
-                    {"x": x, "y": y, "z": z, "block": block, "client": self.parent}
-                )
-                if not allowBuilding:
-                    self.parent.sendBlock(x, y, z)
-                    return
-                # Track if we need to send back the block change
-                overridden = False
-                selectedBlock = block
-                # If we're deleting, block is actually air
-                # (note the selected block is still stored as selectedBlock)
-                if not created:
-                    block = 0
-                # Pre-hook, for stuff like /paint
-                new_block = self.parent.factory.runHook("preBlockChange",
-                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": self.parent})
-                if new_block is not None:
-                    block = new_block
-                    overridden = True
-                # Block detection hook that does not accept any parameters
-                self.parent.factory.runHook(
-                    "blockDetect",
-                    {"x": x, "y": y, "z": z, "block": block, "client": self.parent}
-                )
-                # Call hooks
-                new_block = self.parent.factory.runHook(
-                    "blockChange",
-                    {"x": x, "y": y, "z": z, "block": block, "selected_block": selectedBlock, "client": self.parent}
-                )
-                if new_block is False:
-                    # They weren't allowed to build here!
-                    self.parent.sendBlock(x, y, z)
-                    return
-                # TODO Use object as hint
-                elif new_block == -1:
-                    # Someone else handled building, just continue
-                    return
-                elif new_block is not None:
-                    if not new_block:
-                        block = new_block
-                        overridden = True
-                # OK, save the block
-                self.parent.world[x, y, z] = chr(block)
-                # Now, send the custom block back if we need to
-                if overridden:
-                    self.parent.sendBlock(x, y, z, block)
-            # Out of bounds!
-            except (KeyError, AssertionError):
-                self.parent.sendPacket(TYPE_BLOCKSET, x, y)
-            # OK, replay changes to others
-            else:
-                self.parent.factory.queue.put((self.parent, TASK_BLOCKSET, (x, y, z, block)))
-        else:
-            # Hand it over to the WorldServer
-            self.parent.factory.relayMCPacketToWorldServer(TYPE_BLOCKCHANGE,packetData)
+        pass
 
 
 class BlockSetPacketHandler(BaseMinecraftPacketHandler):

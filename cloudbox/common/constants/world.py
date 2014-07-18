@@ -12,7 +12,28 @@ SUPPORTED_WORLD_TYPES = {
         "fullname": "Classic",
         "finite": True,
         "format": ("cloudbox.world.worlds.classic", "ClassicWorld")
-    }
+    },
+    # TODO Support everything!
+    # "modern_survival": {
+    #     "fullname": "Modern (Survival Mode)",
+    #     "finite": False,
+    #     "format": ("cloudbox.world.worlds.modern.survival", "ModernSurvivalWorld")
+    # },
+    # "modern_creative": {
+    #     "fullname": "Modern (Creative Mode)",
+    #     "finite": False,
+    #     "format": ("cloudbox.world.worlds.modern.creative", "ModernCreativeWorld")
+    # },
+    # "pocket_survival": {
+    #     "fullname": "Pocket Edition (Survival Mode)",
+    #     "finite": False,
+    #     "format": ("cloudbox.world.worlds.pe.survival", "PESurvivalWorld")
+    # },
+    # "pocket_creative": {
+    #     "fullname": "Pocket Edition (Creative Mode)",
+    #     "finite": False,
+    #     "format": ("cloudbox.world.worlds.pe.creative", "PECreativeWorld")
+    # }
 }
 
 SUPPORTED_WORLD_FORMATS = {
