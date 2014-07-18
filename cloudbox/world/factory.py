@@ -3,6 +3,7 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+import importlib
 import logging
 
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -10,6 +11,7 @@ from zope.interface.verify import verifyObject
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
+from cloudbox.common.constants.world import SUPPORTED_WORLD_TYPES, SUPPORTED_WORLD_FORMATS
 from cloudbox.common.database import hasFailed
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.common.models.servers import WorldServer
@@ -31,7 +33,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
     def __init__(self, parentService):
         self.parentService = parentService
         self.logger = logging.getLogger("cloudbox.world.factory")
-        self.worlds = []
+        self.worlds = {}
         self.clients = {}  # {clientID: clientStates} - clientID: player ID, clientStates: dict of states
         self.id = None
         self.instance = None
@@ -100,22 +102,25 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         :param worldInfo A world database entry.
         """
         # Find the world class to use according to its type
-        self.logger.info(worldInfo)
+        wType = SUPPORTED_WORLD_TYPES[worldInfo["type"]]
+        wFormat = SUPPORTED_WORLD_FORMATS[worldInfo["format"]]
+        w = self.worlds[worldInfo["id"]] = getattr(importlib.import_module(wType["format"][0]), wType["format"][1])(self, path=worldInfo["path"])
+        w.format = getattr(importlib.import_module(wFormat["format"][0]), wFormat["format"][1])(worldInfo["path"])
+        w.loadWorld()
+
 
     def loadWorldByID(self, worldID):
         """
         Loads the world given the ID.
         """
         def afterWorldSelect(res):
-            if hasFailed(res):
-                raise
             if len(res) == 0:
                 self.logger.error("No world with ID named {} found".format(worldID))
                 return
             self.loadWorld(res[0])
         return self.db.runQuery(*World.select().where(
             World.worldServerID == self.id and World.id == worldID).sql(
-        )).addBoth(afterWorldSelect)
+        )).addCallback(afterWorldSelect)
 
     def loadWorldByWorldName(self, worldName):
         """
@@ -124,15 +129,13 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         :return int World ID.
         """
         def afterWorldSelect(res):
-            if hasFailed(res):
-                raise
             if len(res) == 0:
                 self.logger.error("No world named {} found".format(worldName))
                 return
             self.loadWorld(res[0])
         return self.db.runQuery(*World.select().where(
             World.worldServerID == self.id and World.name == worldName).sql()
-        ).addBoth(afterWorldSelect)
+        ).addCallback(afterWorldSelect)
 
     def loadPreloadedWorlds(self):
         """
@@ -140,8 +143,6 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         """
         # TODO Check for  broken data?
         def afterWorldSelect(res):
-            if hasFailed(res):
-                raise
             if len(res) == 0:
                 self.logger.critical("No default world set; did you run the installation script?")
                 self.parentService.stop()
@@ -150,7 +151,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         return self.db.runQuery(*World.select().where(
             World.worldServerID == self.id and
             (World.preloadAtServerStart == 1 or World.isDefault == 1)).sql()
-        ).addBoth(afterWorldSelect)
+        ).addCallback(afterWorldSelect)
 
     def unloadWorld(self, worldId):
         pass

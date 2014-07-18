@@ -8,7 +8,7 @@ try:
 except ImportError:
     import StringIO
 
-import nbt
+import nbt.nbt as nbt
 from zope.interface import implements
 
 from cloudbox.common.constants.common import *
@@ -33,13 +33,13 @@ class ClassicWorldWorldFormat(object):
     requiredFields = ["Name", "UUID", "X", "Y", "Z", "Spawn", "BlockArray" "Metadata"]
     optionalFields = ["CreatedBy", "MapGeneratorUsed", "TimeCreated", "LastAccessed", "LastModified"]
 
-    def __init__(self, filepath):
-        self.filepath = filepath
+    def __init__(self, path):
+        self.path = path
 
     def loadWorld(self, io=None):
         returnDict = {}
-        if not io:
-            nbtObject = nbt.NBTFile(fileobj=open(self.filepath, "r"))
+        if io is None:
+            nbtObject = nbt.NBTFile(fileobj=open(self.path, "r"))
         else:
             nbtObject = nbt.NBTFile(fileobj=io)
 

@@ -43,7 +43,7 @@ class ClassicWorld(object):
         return deferToThread(self._loadWorld)
 
     def _loadWorld(self):
-        data = self.format.loadWorld(self.worldParams["filePath"])
+        data = self.format.loadWorld()
         # Unpack data
         self.name = data["Name"]
         self.x, self.y, self.z = data["X"], data["Z"], data["Y"]  # Blame OpenGL

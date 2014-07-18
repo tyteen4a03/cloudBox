@@ -83,10 +83,10 @@ CREATE TABLE IF NOT EXISTS `cb_worlds` (
   `type` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `format` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `isDefault` tinyint(1) NOT NULL,
+  `preloadAtServerStart` tinyint(1) NOT NULL,
   `lastAccessed` int(11) DEFAULT NULL,
   `lastModified` int(11) DEFAULT NULL,
   `timeCreated` int(11) DEFAULT NULL,
-  `preloadAtServerStart` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `path` (`path`,`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
