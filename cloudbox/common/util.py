@@ -6,3 +6,10 @@
 
 def packString(string, length=64, packWith=" "):
     return string + (packWith * (length - len(string)))
+
+
+def noArgs(f):
+    """
+    because twisted
+    """
+    return lambda *args, **kwargs: f()

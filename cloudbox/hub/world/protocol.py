@@ -11,6 +11,7 @@ from cloudbox.common.constants.common import *
 from cloudbox.common.gpp import MSGPackPacketProcessor
 from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxProtocolMixin, TickMixin, WorldServerProtocolMixin
+from cloudbox.common.util import noArgs
 
 
 class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, WorldServerProtocolMixin, TickMixin):
@@ -58,12 +59,11 @@ class WorldServerCommServerProtocol(Protocol, CloudBoxProtocolMixin, WorldServer
         Makes the protocol join the server.
         """
         # Send the basic information over
-        def afterNewPlayer(whatever):
-            self.logger.debug("Whatever is " + str(whatever))
+        def afterNewPlayer():
             d = self.sendStateUpdate(proto.sessionID, proto.player, requireResponse=True)
             self.logger.info("Sent request for {} to join worldServer {}".format(proto.player["username"], self.id))
             return d
-        return self.sendNewPlayer(proto.sessionID).addCallback(afterNewPlayer)
+        return self.sendNewPlayer(proto.sessionID).addCallback(noArgs(afterNewPlayer))
 
     def protoDoLeaveServer(self, proto):
         """

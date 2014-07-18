@@ -5,8 +5,8 @@
 
 from pubsub import pub
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from cloudbox.common.util import noArgs
 
 from cloudbox.world.factory import WorldServerFactory
 
@@ -31,11 +31,11 @@ def init(serv):
         reactor.connectTCP(wsFactory.settings["main"]["hub-ip"], wsFactory.settings["main"]["hub-port"], wsFactory)
 
     def afterLoadedSelfID():
-        serv.factories["WorldServerFactory"].loadPreloadedWorlds().addCallback(afterLoadedPreloadedWorlds)
+        serv.factories["WorldServerFactory"].loadPreloadedWorlds().addCallback(noArgs(afterLoadedPreloadedWorlds))
 
     def afterDBAPIReady():
         # Get our ID
-        wsFactory.loadID().addCallback(afterLoadedSelfID)
+        wsFactory.loadID().addCallback(noArgs(afterLoadedSelfID))
 
     pub.subscribe(afterDBAPIReady, "cloudbox.common.service.databaseAPIReady")
 

@@ -12,13 +12,13 @@ from twisted.enterprise import adbapi
 from twisted.python import log, failure
 
 
-logger = getLogger("cloudbox.database.error")
+__logger = getLogger("cloudbox.database.error")
 
 
 def hasFailed(res):
     if isinstance(res, failure.Failure):
-        logger.error("Database query error:")
-        logger.error(res.getTraceback())
+        __logger.error("Database query error:")
+        __logger.error(res.getTraceback())
         return True
     return False
 

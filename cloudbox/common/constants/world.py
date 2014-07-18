@@ -6,7 +6,16 @@
 """
 Constants for World Servers.
 """
-SUPPORTED_LEVEL_FORMATS = {
+
+SUPPORTED_WORLD_TYPES = {
+    "classic": {
+        "fullname": "Classic",
+        "finite": True,
+        "format": ("cloudbox.world.worlds.classic", "ClassicWorld")
+    }
+}
+
+SUPPORTED_WORLD_FORMATS = {
     "cw": {
         "fullname": "ClassicWorld",
         "format": ("cloudbox.common.world.formats.cw", "ClassicWorldWorldFormat")

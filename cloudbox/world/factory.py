@@ -6,14 +6,15 @@
 import logging
 
 from twisted.internet.protocol import ReconnectingClientFactory
+from zope.interface.verify import verifyObject
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
 from cloudbox.common.database import hasFailed
-from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.common.models.servers import WorldServer
 from cloudbox.common.models.world import World
+from cloudbox.world.interfaces import IWorld
 from cloudbox.world.protocol import WorldServerProtocol
 
 
@@ -45,25 +46,24 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         return h
 
     def loadID(self):
-        def afterGetID(res):
-            if hasFailed(res):
-                raise
-            if len(res) == 0:
-                def afterInsertedEntry(res):
-                    if hasFailed(res):
-                        raise
-                    self.logger.info(res.lastrowid)
-                    self.id = res.lastrowid
+        def storeID(id):
+            self.id = id
 
+        def getIDFromLastRow(res):
+            return res.lastrowid
+
+        def afterGetID(res):
+            if len(res) == 0:
                 _ws = WorldServer(
                     name=self.settings["main"]["server-name"]
                 )
-                return self.db.runQuery(*_ws.sql()).addBoth(afterInsertedEntry)
+                return self.db.runQuery(*_ws.sql()).addCallback(getIDFromLastRow)
             else:
-                self.id = res[0]["id"]
+                return res[0]["id"]
+
         return self.db.runQuery(
             *WorldServer.select().where(WorldServer.name == self.settings["main"]["server-name"]).sql()
-        ).addBoth(afterGetID)
+        ).addCallback(afterGetID).addCallback(storeID)
 
     ### Twisted functions
 
@@ -190,8 +190,11 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         for w in self.worlds:
             self.closeWorld(w.worldID)
 
-    def addWorld(self, worldName, filepath):
-        """Adds the world to the database."""
+    def addWorld(self, world):
+        """Adds the world to the database.
+        @param world A valid World object.
+        """
+        assert verifyObject(IWorld, world)
         self.db.runQuery()
 
     def deleteWorld(self, worldID):

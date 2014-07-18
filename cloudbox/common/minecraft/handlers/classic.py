@@ -17,7 +17,7 @@ from cloudbox.common.exceptions import DatabaseServerLinkException
 from cloudbox.common.handlers import BasePacketHandler
 from cloudbox.common.interfaces import IMinecraftPacketHandler
 from cloudbox.common.models.user import User, UserServiceAssoc
-from cloudbox.common.util import packString
+from cloudbox.common.util import packString, noArgs
 
 
 class BaseMinecraftPacketHandler(BasePacketHandler):
@@ -100,8 +100,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
                 # User found. Populate
                 self.parent.db.runQuery(*User.select().where(User.id == res).sql()).addBoth(actuallyPopulateData)
 
-        def afterAssignedWorldServer(res):
-            self.logger.info(res)
+        def afterAssignedWorldServer():
             self.parent.joinDefaultWorld()
             # Announce our presence
             self.parent.factory.logger.info("Connected, as '%s'" % self.parent.player["username"])
@@ -122,7 +121,7 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
             })
             self.parent.loops.registerLoop("keepAlive", LoopingCall(self.parent.sendKeepAlive)).start(1)
 
-        def gotData(results):
+        def gotData():
             # OK, see if there's anyone else with that username
             usernameList = self.parent.factory.buildUsernameList()
             if self.parent.player["username"].lower() in usernameList:
@@ -133,14 +132,14 @@ class HandshakePacketHandler(BaseMinecraftPacketHandler):
 
             # All check complete. Request World Server to prepare level
             self.parent.identified = True
-            self.parent.factory.assignWorldServer(self.parent).addBoth(afterAssignedWorldServer)
+            self.parent.factory.assignWorldServer(self.parent).addBoth(noArgs(afterAssignedWorldServer))
 
         def gotBans(data):
             # Are they banned?
             if data:
                 self.parent.sendError("You are banned: {}".format(data["reason"]))
                 return
-            self.parent.factory.getUserByUsername(self.parent.player["username"]).addBoth(populateData).addBoth(gotData)
+            self.parent.factory.getUserByUsername(self.parent.player["username"]).addBoth(populateData).addBoth(noArgs(gotData))
 
         returned = self.parent.factory.getBans(self.parent.player["username"])
         if isinstance(returned, Deferred):

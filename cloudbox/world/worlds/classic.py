@@ -10,7 +10,7 @@ from twisted.internet.threads import deferToThread
 from zope.interface import implements
 
 from cloudbox.common.constants.cpe import *
-from cloudbox.common.constants.world import SUPPORTED_LEVEL_FORMATS
+from cloudbox.common.constants.world import SUPPORTED_WORLD_FORMATS
 from cloudbox.world.interfaces import IWorld
 
 
@@ -66,8 +66,8 @@ class ClassicWorld(object):
 
     def _saveWorld(self):
         # Get the handler
-        cls = getattr(importlib.import_module(SUPPORTED_LEVEL_FORMATS[self.worldParams["worldType"][0]]),
-                      SUPPORTED_LEVEL_FORMATS[self.worldParams["worldType"][1]])
+        cls = getattr(importlib.import_module(SUPPORTED_WORLD_FORMATS[self.worldParams["worldType"][0]]),
+                      SUPPORTED_WORLD_FORMATS[self.worldParams["worldType"][1]])
         # Prepare data
         data = {
             "Name": self.name,

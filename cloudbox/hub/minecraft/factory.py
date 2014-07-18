@@ -16,6 +16,7 @@ from cloudbox.common.loops import LoopRegistry
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.common.models.user import Bans, User, UserIP
 from cloudbox.common.models.world import World
+from cloudbox.common.util import noArgs
 from cloudbox.hub.exceptions import NoResultsException, WorldServerLinkNotEstablishedException
 from cloudbox.hub.minecraft.protocol import MinecraftHubServerProtocol
 
@@ -95,7 +96,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             world = "default"  # TODO Link to settings
         assert proto.wsID is None, "Tried to reassign already assigned client."
 
-        def afterAddedNewClient(whatever, wsProto):
+        def afterAddedNewClient(wsProto):
             # Confirm the assginment
             proto.wsID = wsProto.id
             self.logger.info(wsProto.id)
@@ -108,7 +109,7 @@ class MinecraftHubServerFactory(ServerFactory, CloudBoxFactoryMixin, TaskTickMix
             if ws not in self.getFactory("WorldServerCommServerFactory").worldServers:
                 raise WorldServerLinkNotEstablishedException
             wsProto = self.getFactory("WorldServerCommServerFactory").worldServers[ws]
-            return wsProto.protoDoJoinServer(proto, world).addCallback(afterAddedNewClient, wsProto)
+            return wsProto.protoDoJoinServer(proto, world).addCallback(noArgs(afterAddedNewClient), wsProto)
 
         return self.db.runQuery(
             *World.select(World.worldServerID).where(World.name == world).sql()
