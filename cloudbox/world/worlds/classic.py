@@ -35,8 +35,7 @@ class ClassicWorld(object):
         self.additionalData = {}
         self.blockData = bytearray()
         self.metadata = {}
-        self.CPEMetadata = {}
-        self.blockMetadata = {}
+        self.fullMetadata = {}
         self.physics = None  # Physics engine here
 
     def loadWorld(self):
@@ -58,16 +57,13 @@ class ClassicWorld(object):
             "LastModified": data["LastModified"],
         }
         self.metadata = data["Metadata"]["cloudBox"]
-        self.blockMetadata = self.metadata["_BlockMetadata"]
+        self.fullMetadata = data["Metadata"]
         self.worldReady = True
 
     def saveWorld(self):
         return deferToThread(self._saveWorld)
 
     def _saveWorld(self):
-        # Get the handler
-        cls = getattr(importlib.import_module(SUPPORTED_WORLD_FORMATS[self.worldParams["worldType"][0]]),
-                      SUPPORTED_WORLD_FORMATS[self.worldParams["worldType"][1]])
         # Prepare data
         data = {
             "Name": self.name,
@@ -76,7 +72,7 @@ class ClassicWorld(object):
             "Y": self.z,
             "Z": self.y,
             "CreatedBy": self.additionalData["CreatedBy"],
-            "MapGeneratorUsed": self.additionalData["MapGeneratorUsed"],
+            "MapGenerator": self.additionalData["MapGenerator"],
             "TimeCreated": self.additionalData["TimeCreated"],
             "LastAccessed": self.additionalData["LastAccessed"],
             "LastModified": self.additionalData["LastModified"],
@@ -91,11 +87,8 @@ class ClassicWorld(object):
             "Metadata": {
                 "cloudBox": self.metadata
             },
-            "BlockMetadata": {
-                "cloudBox": self.blockMetadata
-            },
         }
-        cls.saveWorld(self.worldParams["filePath"], data)
+        self.format.saveWorld(data)
 
     @staticmethod
     def filterCPEBlocks(blockArray, fallbackArray=CPE_EXTENSIONS["CustomBlocks"]["Fallback"]):

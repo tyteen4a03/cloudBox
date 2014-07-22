@@ -24,26 +24,26 @@ class IWorld(Interface):
         """
 
 
-class IWorldFormat(Interface):
+class IWorldLoader(Interface):
     """
-    I am a World Format.
+    I am a World Loader.
     """
 
-    name = Attribute("The name of the world format.")
-    supportsLoading = Attribute("Whether I support loading worlds from this format.")
-    supportsSaving = Attribute("Whether I support saving worlds to this format.")
+    name = Attribute("The name of the world loader.")
+    supportsLoading = Attribute("Whether I support loading worlds from the format I support.")
+    supportsSaving = Attribute("Whether I support saving worlds as the format I support.")
 
     worldStorageFormat = Attribute("How this world is stored. Valid values are: file, directory, stream")
     fileExtensions = Attribute("List of file extensions this WorldFormat supports. If it's a directory, set as None.")
 
-    def loadWorld(filepath):
+    def loadWorld():
         """
         Loads a world from filepath. Returns a dictionary that follows the ClassicWorld format
         (see docs/worldFormat and docs/worldFormat-CPE)
         This function is allowed to block.
         """
 
-    def saveWorld(filepath, data):
+    def saveWorld(data):
         """
         Saves a world from filepath, using data given. Data is a dictionary that follows the ClassicWorld format.
         This function is allowed to block.
