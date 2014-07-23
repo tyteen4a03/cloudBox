@@ -11,7 +11,7 @@ from zope.interface.verify import verifyObject
 
 from cloudbox.common.constants.common import *
 from cloudbox.common.constants.handlers import *
-from cloudbox.common.constants.world import SUPPORTED_WORLD_TYPES, SUPPORTED_WORLD_FORMATS
+from cloudbox.common.constants.world import SUPPORTED_WORLD_TYPES, SUPPORTED_WORLD_LOADERS
 from cloudbox.common.database import hasFailed
 from cloudbox.common.mixins import CloudBoxFactoryMixin, TaskTickMixin
 from cloudbox.common.models.servers import WorldServer
@@ -103,7 +103,7 @@ class WorldServerFactory(ReconnectingClientFactory, CloudBoxFactoryMixin, TaskTi
         """
         # Find the world class to use according to its type
         wType = SUPPORTED_WORLD_TYPES[worldInfo["type"]]
-        wFormat = SUPPORTED_WORLD_FORMATS[worldInfo["format"]]
+        wFormat = SUPPORTED_WORLD_LOADERS[worldInfo["format"]]
         w = self.worlds[worldInfo["id"]] = getattr(importlib.import_module(wType["format"][0]), wType["format"][1])(self, path=worldInfo["path"])
         w.format = getattr(importlib.import_module(wFormat["format"][0]), wFormat["format"][1])(worldInfo["path"])
         w.loadWorld()

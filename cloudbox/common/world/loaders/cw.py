@@ -3,14 +3,18 @@
 # To view more details, please see the "LICENSE" file in the "docs" folder of the
 # cloudBox Package.
 
+from pynbt.nbt import BaseTag
+from cloudbox.common.util import walkDictWithRef
+
 try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
+import gzip
 import logging
 import shutil
 
-import nbt.nbt as nbt
+from pynbt import *
 from zope.interface import implements
 
 from cloudbox.common.constants.common import *
@@ -32,157 +36,88 @@ class ClassicWorldWorldLoader(object):
 
     ACCEPTABLE_LEVEL_VERSIONS = [1, ]
 
+    # Field definiton: itemName: default
+
     requiredFields = {
-        "Name": {
-            "type": nbt.TAG_String,
-            "default": ""
-        },
-        "FormatVersion": {
-            "type": nbt.TAG_Byte,
-            "default": 1
-        },
-        "UUID": {
-            "type": nbt.TAG_Byte_Array,
-            "default": None,  # Raise hell
-        },
-        "X": {
-            "type": nbt.TAG_Short,
-            "default": 0,
-        },
-        "Y": {
-            "type": nbt.TAG_Short,
-            "default": 0,
-        },
-        "Z": {
-            "type": nbt.TAG_Short,
-            "default": 0,
-        },
+        "Name": TAG_String(""),
+        "FormatVersion": TAG_Byte(1),
+        "UUID": TAG_Byte_Array(bytearray()),
+        "X": TAG_Short(0),
+        "Y": TAG_Short(0),
+        "Z": TAG_Short(0),
         "Spawn": {
-            "type": nbt.TAG_Compound,
-            "default": {
-                "X": {
-                    "type": nbt.TAG_Short,
-                    "default": 0,
-                },
-                "Y": {
-                    "type": nbt.TAG_Short,
-                    "default": 0,
-                },
-                "Z": {
-                    "type": nbt.TAG_Short,
-                    "default": 0,
-                },
-                "H": {
-                    "type": nbt.TAG_Byte,
-                    "default": 0,
-                },
-                "P": {
-                    "type": nbt.TAG_Byte,
-                    "default": 0,
-                },
-            }
+            "X": TAG_Short(0),
+            "Y": TAG_Short(0),
+            "Z": TAG_Short(0),
+            "H": TAG_Byte(0),
+            "P": TAG_Byte(0),
         },
-        "BlockArray": {
-            "type": nbt.TAG_Byte_Array,
-            "default": bytearray(),
-        },
+        "BlockArray": TAG_Byte_Array(bytearray()),
         "Metadata": {
-            "type": nbt.TAG_Compound,
-            "default": {
-                "cloudBox": {
-                    "type": nbt.TAG_Compound,
-                    "default": {}
-                }
-            }
+            "cloudBox": {},
         }
     }
     optionalFields = {
         "CreatedBy": {
-            "type": nbt.TAG_Compound,
-            "default": {
-                "Service": {
-                    "type": nbt.TAG_String,
-                    "default": "cloudBox"
-                },
-                "Username": {
-                    "type": nbt.TAG_String,
-                    "default": ""
-                }
-            }
+            "Service": TAG_String("ClassiCube"),
+            "Username": TAG_String(""),
         },
         "MapGenerator": {
-            "type": nbt.TAG_Compound,
-            "default": {
-                "Software": {
-                        "type": nbt.TAG_String,
-                        "default": "cloudBox"
-                    },
-                "MapGeneratorName": {
-                        "type": nbt.TAG_String,
-                        "default": "cloudBox"
-                    }
-            }
+            "Software": TAG_String("cloudBox"),
+            "MapGeneratorName": TAG_String("cloudBox"),
         },
-        "TimeCreated": {
-            "type": nbt.TAG_Long,
-            "default": 0
-        },
-        "LastAccessed": {
-            "type": nbt.TAG_Long,
-            "default": 0
-        },
-        "LastModified": {
-            "type": nbt.TAG_Long,
-            "default": 0
-        }
+        "TimeCreated": TAG_Long(0),
+        "LastAccessed": TAG_Long(0),
+        "LastModified": TAG_Long(0),
     }
 
     def __init__(self, path):
         self.path = path
         self.logger = logging.getLogger("cloudbox.world.loader.classicworld")
 
+    def _loadRequired(self, d, rd, k, v):
+        if k not in d:
+            self.logger.warn("Required field {} missing.".format(k))
+            return k, rd[k].value if isinstance(rd[k], BaseTag) else rd[k]
+        else:
+            return k, v.value if isinstance(v, BaseTag) else v
+
+    def _loadOptional(self, d, rd, k, v):
+        if k in d:
+            return k, v.value if isinstance(v, BaseTag) else v
+        else:
+            return k, rd[k].value if isinstance(rd[k], BaseTag) else rd[k]
+
     def loadWorld(self, io=None):
         returnDict = {}
 
         if io is None:
-            nbtObject = nbt.NBTFile(self.path, 'rb')
+            with gzip.open(self.path, 'rb') as io:
+                nbtObject = NBTFile(io)
         else:
-            nbtObject = nbt.NBTFile(fileobj=io)
+            nbtObject = NBTFile(io)
 
         if nbtObject.name != "ClassicWorld":
             raise WorldLoadError(ERRORS["header_mismatch"], "Header mismatch. Maybe the file is broken?")
         if nbtObject["FormatVersion"].value not in self.ACCEPTABLE_LEVEL_VERSIONS:
             raise WorldLoadError(ERRORS["unsupported_level_version"], "Level version unsupported.")
 
-        for r in self.requiredFields:
-            if r not in nbtObject:
-                self.logger.warn("Required field {} missing.".format(r))
-                returnDict[r] = self.requiredFields[r]
-            else:
-                returnDict[r] = nbtObject[r]
-        for r in self.optionalFields:
-            if r in nbtObject:
-                returnDict[r] = nbtObject[r]
-            else:
-                returnDict[r] = self.optionalFields[r]
+        returnDict.update(walkDictWithRef(nbtObject, self.requiredFields, self._loadRequired, lambda k, v: not isinstance(v, dict)))
+        returnDict.update(walkDictWithRef(nbtObject, self.optionalFields, self._loadOptional, lambda k, v: not isinstance(v, dict)))
+        self.logger.debug(returnDict)
         return returnDict
 
     def saveWorld(self, data, io=None):
-        if io is None:
-            nbtObject = nbt.NBTFile(self.path + ".tmp", 'wb')
-        else:
-            nbtObject = nbt.NBTFile(fileobj=io)
+        returnDict = {}
+        returnDict.update(walkDictWithRef(data, self.requiredFields, self._saveRequired, lambda k, v: not isinstance(v, dict)))
+        returnDict.update(walkDictWithRef(data, self.optionalFields, self._saveOptional, lambda k, v: not isinstance(v, dict)))
 
-        for r in self.requiredFields:
-            if r not in data:
-                self.logger.warn("Required field {} missing.".format(r))
-                nbtObject[r] = self.requiredFields[r]
-            else:
-                nbtObject[r] = data[r]
-        for r in self.optionalFields:
-            if r in data:
-                nbtObject[r] = data[r]
-            else:
-                nbtObject[r] = self.optionalFields[r]
-        nbtObject.write_file()
+        nbtObject = NBTFile(value=returnDict)
+        if io is None:
+            with gzip.open(self.path + ".tmp", 'rb') as io:
+                nbtObject.save(io, True)
+        else:
+            nbtObject.save(io, True)
+
+        nbtObject.save()
         shutil.move(self.path + ".tmp", self.path)

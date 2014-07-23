@@ -1,3 +1,3 @@
 @ECHO OFF
-python run.py WorldServer
+python run.py WorldServer --debug
 pause

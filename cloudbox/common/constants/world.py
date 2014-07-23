@@ -36,9 +36,9 @@ SUPPORTED_WORLD_TYPES = {
     # }
 }
 
-SUPPORTED_WORLD_FORMATS = {
+SUPPORTED_WORLD_LOADERS = {
     "cw": {
         "fullname": "ClassicWorld",
-        "format": ("cloudbox.common.world.formats.cw", "ClassicWorldWorldFormat")
+        "format": ("cloudbox.common.world.loaders.cw", "ClassicWorldWorldLoader")
     }
 }

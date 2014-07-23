@@ -10,7 +10,7 @@ from twisted.internet.threads import deferToThread
 from zope.interface import implements
 
 from cloudbox.common.constants.cpe import *
-from cloudbox.common.constants.world import SUPPORTED_WORLD_FORMATS
+from cloudbox.common.constants.world import SUPPORTED_WORLD_LOADERS
 from cloudbox.world.interfaces import IWorld
 
 
